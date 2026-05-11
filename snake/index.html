@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Crossword Go</title>
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+
+    <!-- Persistent top-strip scene: snake creeping toward hero. -->
+    <div id="save-scene">
+      <div class="scene-bg"></div>
+      <div class="scene-hero">
+        <img class="hero-sprite hero-scared" src="assets/scene/hero_scared.png" alt="" draggable="false">
+        <img class="hero-sprite hero-brave"  src="assets/scene/hero_brave.png"  alt="" draggable="false">
+        <img class="hero-sprite hero-safe"   src="assets/scene/hero_safe.png"   alt="" draggable="false">
+      </div>
+      <div class="scene-snake">
+        <div class="snake-head-wrap">
+          <img class="snake-head head-normal" src="assets/scene/snake_head.png"        alt="" draggable="false">
+          <img class="snake-head head-recoil" src="assets/scene/snake_head_recoil.png" alt="" draggable="false">
+        </div>
+        <img class="snake-body snake-body-1" src="assets/scene/snake_body.png" alt="" draggable="false">
+        <img class="snake-body snake-body-2" src="assets/scene/snake_body.png" alt="" draggable="false">
+        <img class="snake-body snake-body-3" src="assets/scene/snake_body.png" alt="" draggable="false">
+        <img class="snake-body snake-body-4" src="assets/scene/snake_body.png" alt="" draggable="false">
+        <img class="snake-body snake-body-5" src="assets/scene/snake_body.png" alt="" draggable="false">
+        <img class="snake-tail"             src="assets/scene/snake_tail.png" alt="" draggable="false">
+      </div>
+      <div class="scene-vignette"></div>
+    </div>
+
+    <!-- Three-act cinematics: full-bleed overlays that appear at game start (intro) and at all-kills (outro). -->
+    <div id="intro-cinematic" class="cine hidden">
+      <div class="cine-bg"></div>
+      <img class="cine-hero" src="assets/scene/hero_scared.png" alt="" draggable="false">
+      <img class="cine-snake-head"  src="assets/scene/snake_head.png" alt="" draggable="false">
+      <img class="cine-snake-body4" src="assets/scene/snake_body.png" alt="" draggable="false">
+      <img class="cine-snake-body3" src="assets/scene/snake_body.png" alt="" draggable="false">
+      <img class="cine-snake-body2" src="assets/scene/snake_body.png" alt="" draggable="false">
+      <img class="cine-snake-body1" src="assets/scene/snake_body.png" alt="" draggable="false">
+      <div class="cine-vignette"></div>
+      <div class="cine-text" id="intro-text">OH NO!</div>
+    </div>
+
+    <div id="outro-cinematic" class="cine hidden">
+      <div class="cine-bg cine-bg-bright"></div>
+      <img class="cine-hero cine-hero-safe" src="assets/scene/hero_safe.png" alt="" draggable="false">
+      <div class="cine-text cine-text-win" id="outro-text">YOU SAVED HIM!</div>
+    </div>
+
+    <!-- Centered play area: score header → crossword grid → letter bank -->
+    <div id="play-area">
+      <div class="score-row">
+        <div class="score-pill you">
+          <div class="score-value" id="score-you">0</div>
+          <div class="score-label">You</div>
+        </div>
+        <div class="vs">Vs</div>
+        <div class="score-pill opp">
+          <div class="score-value" id="score-opp">86</div>
+          <div class="score-label">Opponent</div>
+        </div>
+      </div>
+      <div id="grid-wrap">
+        <div id="level-badge">Level<br><strong>1</strong></div>
+        <div id="grid"></div>
+      </div>
+      <div id="bank"></div>
+    </div>
+
+
+    <!-- Particle canvas overlay -->
+    <canvas id="fx"></canvas>
+
+    <!-- Tutorial finger -->
+    <div id="finger" class="hidden">
+      <svg viewBox="0 0 64 64" width="64" height="64">
+        <path d="M22 18 L22 38 Q22 48 32 48 L40 48 Q48 48 48 40 L48 28 Q48 24 44 24 Q40 24 40 28 L40 22 Q40 18 36 18 Q32 18 32 22 L32 16 Q32 12 28 12 Q24 12 24 16 L24 32"
+              fill="#fff8ea" stroke="#3a2410" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M24 16 Q24 14 26 14 Q28 14 28 16" stroke="#3a2410" stroke-width="1.5" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- Banners -->
+    <div id="banner" class="hidden"></div>
+
+    <!-- CTA overlay (final win-state takeover) -->
+    <div id="cta" class="hidden">
+      <div class="cta-card">
+        <div class="cta-logo">Crossword <span>Go</span></div>
+        <div class="cta-stars">★★★★★ <span class="rating">4.8</span></div>
+        <div class="cta-social">10M+ players</div>
+        <button id="cta-btn">DOWNLOAD FREE</button>
+        <div class="cta-sub">Play 1000+ puzzles</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

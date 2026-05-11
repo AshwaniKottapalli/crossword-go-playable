@@ -1,0 +1,865 @@
+/* Crossword Go playable — UI matching the real game (periwinkle + cream + gold tiles) */
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipulation; background: #6b7fb0; font-family: -apple-system, BlinkMacSystemFont, "Nunito", "Segoe UI", Roboto, sans-serif; font-weight: 800; }
+
+#app {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #6b7fb0;
+}
+
+/* Portrait 9:16 letterbox — capped at phone-ish width so desktop preview matches mobile */
+#stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 9 / 16), 460px);
+  aspect-ratio: 9 / 16;
+  max-height: 100vh;
+  background: linear-gradient(180deg, #b8c7e8 0%, #9eaedb 65%, #8d9fd0 100%);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  justify-content: flex-start;     /* stack from top, no extra space between children */
+  align-items: center;
+  gap: 3%;                          /* small gap between scene and play-area */
+  padding: 1% 4% 1%;
+}
+
+/* ---------- Top: "Save the Hero" scene ---------- */
+#save-scene {
+  position: relative;
+  width: 100%;
+  height: 34%;
+  flex: 0 0 auto;
+  z-index: 3;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-top: 0;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.22), 0 0 0 2px rgba(0,0,0,0.4);
+  background: #0e1224;
+}
+
+#save-scene .scene-bg {
+  position: absolute; inset: 0;
+  background-image: url('../assets/scene/bg_scene.jpg');
+  background-size: cover;
+  background-position: center 65%;
+  filter: saturate(1.05);
+}
+
+#save-scene::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 80%, rgba(255,200,140,0.18), transparent 60%);
+  pointer-events: none;
+}
+
+/* ---------- Hero (left side of strip) ---------- */
+#save-scene .scene-hero {
+  position: absolute;
+  left: 1%;
+  bottom: -10%;
+  width: 28%;
+  height: 135%;
+  z-index: 3;
+  pointer-events: none;
+}
+#save-scene .hero-sprite {
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom;
+  opacity: 0;
+  transition: opacity 320ms ease;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+}
+#save-scene .hero-sprite.show { opacity: 1; }
+
+/* ---------- Snake ---------- */
+/* Layout: head anchored near hero (left side of strip), body chains rightward,
+   tail extends off-screen. Snake group translates RIGHT on each kill (retreats).
+   Body-1 has a negative translateY so it visually attaches to the head's NECK
+   (upper-right of head sprite, not its center). Each subsequent segment is a bit
+   smaller — gives the snake a sense of receding into the distance. */
+#save-scene .scene-snake {
+  position: absolute;
+  left: 26%;
+  right: -8%;                   /* slight overhang so tail extends partly off-screen */
+  top: 50%;
+  height: 100%;
+  z-index: 4;
+  transform: translate(0%, -50%);
+  transition: transform 320ms cubic-bezier(0.34, 1.4, 0.5, 1);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5));
+}
+#save-scene .scene-snake img,
+#save-scene .scene-snake .snake-head-wrap {
+  display: block;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+#save-scene .scene-snake .snake-head-wrap {
+  height: 65%;
+  aspect-ratio: 1 / 1;
+  margin-right: -28%;
+  z-index: 6;
+  transform: translateY(-22%);    /* push head UP so the neck/body-attach point sits near strip center */
+}
+#save-scene .snake-head-wrap img {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+}
+#save-scene .head-recoil  { opacity: 0; transition: opacity 80ms ease; }
+#save-scene .head-recoil.hit { opacity: 1; transition: opacity 0ms; }
+#save-scene .head-normal.hit { opacity: 0; }
+
+/* Mid body: 5 small segments forming a visible wave between head and tail.
+   Alternating Y-offsets + flips create the serpent curve. Each kill destroys one. */
+#save-scene .snake-body {
+  aspect-ratio: 5 / 3;
+  height: 22%;
+}
+/* Bodies sit at strip center (head's lower-right neck attachment). Alternating
+   translateY creates the slithering wave. */
+#save-scene .snake-body-1 { transform: translateY(10%)  rotate(-2deg);             margin-right: -22%; z-index: 5; }
+#save-scene .snake-body-2 { transform: translateY(30%)  rotate(8deg)  scaleX(-1);   margin-right: -22%; z-index: 4; }
+#save-scene .snake-body-3 { transform: translateY(10%)  rotate(-2deg);             margin-right: -22%; z-index: 3; }
+#save-scene .snake-body-4 { transform: translateY(30%)  rotate(8deg)  scaleX(-1);   margin-right: -22%; z-index: 2; }
+#save-scene .snake-body-5 { transform: translateY(15%)  rotate(-2deg);             margin-right: -18%; z-index: 1; }
+#save-scene .snake-tail   { height: 20%; aspect-ratio: 5 / 3; transform: translateY(25%) rotate(-2deg); z-index: 1; }
+
+/* Body destruction: bright glow flash + fade. Then .dead removes from flex flow
+   so the rest of the body chain slides leftward to fill the gap. */
+#save-scene .snake-body.dying {
+  animation: bodyDie 400ms ease forwards;
+  z-index: 10;
+}
+@keyframes bodyDie {
+  0%   { opacity: 1; filter: brightness(1); }
+  30%  { opacity: 1; filter: brightness(2.5) saturate(2) drop-shadow(0 0 16px #9aff4a); }
+  100% { opacity: 0; filter: brightness(1); }
+}
+#save-scene .snake-body.dead { display: none; }
+
+/* ---------- Vignette ---------- */
+#save-scene .scene-vignette {
+  position: absolute; inset: 0;
+  background-image: url('../assets/scene/fx_vignette.png');
+  background-size: 100% 100%;
+  background-position: center;
+  opacity: var(--vignette-opacity, 0.2);
+  pointer-events: none;
+  z-index: 5;
+  mix-blend-mode: multiply;
+  transition: opacity 200ms ease;
+}
+#save-scene .scene-vignette.flash { animation: vignettePulse 380ms ease-out; }
+@keyframes vignettePulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.95; }
+  100% { opacity: var(--vignette-opacity, 0.2); }
+}
+
+/* ---------- Splat FX ---------- */
+.splat {
+  position: absolute;
+  width: 110px; height: 110px;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 25;
+  animation: splatPop 480ms ease-out forwards;
+  filter: drop-shadow(0 0 12px rgba(154, 255, 74, 0.6));
+}
+@keyframes splatPop {
+  0%   { transform: translate(-50%, -50%) scale(0.3) rotate(-30deg); opacity: 0; }
+  20%  { transform: translate(-50%, -50%) scale(1.25) rotate(8deg); opacity: 1; }
+  60%  { transform: translate(-50%, -50%) scale(1.1)  rotate(-4deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.3)  rotate(12deg); opacity: 0; }
+}
+
+/* ---------- Mini stage shake on each kill ---------- */
+#stage.mini-shake { animation: miniShake 240ms ease; }
+@keyframes miniShake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-3px) rotate(-0.2deg); }
+  50%      { transform: translateX(3px)  rotate(0.2deg); }
+  75%      { transform: translateX(-2px); }
+}
+
+/* ---------- Intro / Outro full-bleed cinematics ---------- */
+.cine {
+  position: absolute; inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  background: #0a0d1c;
+}
+.cine.hidden { display: none; }
+.cine .cine-bg {
+  position: absolute; inset: 0;
+  background-image: url('../assets/scene/bg_scene.jpg');
+  background-size: cover;
+  background-position: center;
+}
+.cine .cine-bg-bright {
+  filter: brightness(1.4) saturate(1.2) hue-rotate(20deg);
+}
+
+/* INTRO: snake LUNGES at terrified hero */
+#intro-cinematic .cine-hero {
+  position: absolute;
+  left: 50%; top: 58%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  z-index: 4;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+  animation: heroTremble 0.18s ease-in-out infinite alternate;
+}
+@keyframes heroTremble {
+  from { transform: translate(calc(-50% - 2px), -50%); }
+  to   { transform: translate(calc(-50% + 2px), -50%); }
+}
+/* Hide extra body parts in intro — the body PNG is S-curved so chaining 4 of them
+   makes spaghetti. Just show head lunging + one trailing body off-screen for "this
+   snake is huge" feel. */
+#intro-cinematic .cine-snake-body2,
+#intro-cinematic .cine-snake-body3,
+#intro-cinematic .cine-snake-body4 { display: none; }
+
+#intro-cinematic .cine-snake-head,
+#intro-cinematic .cine-snake-body1 {
+  position: absolute;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
+}
+#intro-cinematic .cine-snake-head {
+  right: -12%; top: 26%;
+  width: 78%;
+  z-index: 5;
+  transform-origin: 80% 50%;
+  animation: headLunge 2.5s cubic-bezier(0.45, 0, 0.5, 1) forwards;
+}
+#intro-cinematic .cine-snake-body1 {
+  right: -42%; top: 52%;
+  width: 60%;
+  z-index: 4;                       /* behind head */
+  transform: rotate(18deg);
+  animation: bodyTrail 2.5s ease-out forwards;
+}
+@keyframes headLunge {
+  0%   { opacity: 0; transform: translateX(45%) scale(0.85) rotate(0deg); }
+  35%  { opacity: 1; transform: translateX(22%) scale(1.0)  rotate(-2deg); }
+  70%  { opacity: 1; transform: translateX(5%)  scale(1.18) rotate(-5deg); }
+  100% { opacity: 1; transform: translateX(-8%) scale(1.25) rotate(-3deg); }
+}
+@keyframes bodyTrail {
+  0%   { opacity: 0; transform: translateX(35%) rotate(18deg); }
+  60%  { opacity: 0.85; transform: translateX(8%) rotate(18deg); }
+  100% { opacity: 0.85; transform: translateX(0%) rotate(15deg); }
+}
+
+#intro-cinematic .cine-vignette {
+  position: absolute; inset: 0;
+  background-image: url('../assets/scene/fx_vignette.png');
+  background-size: 100% 100%;
+  z-index: 6;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  animation: cineVignettePulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes cineVignettePulse {
+  from { opacity: 0.55; }
+  to   { opacity: 0.95; }
+}
+
+.cine-text {
+  position: absolute;
+  left: 50%; top: 18%;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  font-size: clamp(38px, 11vw, 64px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #ffeb3b;
+  text-shadow:
+    -3px -3px 0 #c0392b, 3px -3px 0 #c0392b, -3px 3px 0 #c0392b, 3px 3px 0 #c0392b,
+    0 6px 0 rgba(0,0,0,0.5);
+  animation: cineTextPunch 480ms cubic-bezier(0.2, 1.6, 0.4, 1) 0.4s both;
+  opacity: 0;
+}
+.cine-text-win {
+  color: #ffdf6b;
+  font-size: clamp(28px, 8.5vw, 50px);
+  top: 14%;
+  text-shadow:
+    -3px -3px 0 #2a8044, 3px -3px 0 #2a8044, -3px 3px 0 #2a8044, 3px 3px 0 #2a8044,
+    0 6px 0 rgba(0,0,0,0.4);
+}
+@keyframes cineTextPunch {
+  0%   { transform: translate(-50%, -50%) scale(0.2) rotate(-12deg); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.15) rotate(3deg);  opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0);        opacity: 1; }
+}
+#intro-cinematic.exit { animation: cineFadeOut 320ms ease forwards; }
+@keyframes cineFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+#stage.intro-shaking { animation: introStageShake 0.22s ease-in-out infinite; }
+@keyframes introStageShake {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-3px, 1px); }
+  50%      { transform: translate(3px, -1px); }
+  75%      { transform: translate(-2px, 2px); }
+}
+
+/* OUTRO */
+#outro-cinematic { opacity: 0; transition: opacity 700ms ease; }
+#outro-cinematic.playing { opacity: 1; }
+#outro-cinematic .cine-hero-safe {
+  position: absolute;
+  left: 50%; top: 56%;
+  transform: translate(-50%, -50%);
+  width: 62%;
+  z-index: 4;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
+  animation: heroJump 1.2s cubic-bezier(0.3, 1.6, 0.4, 1) infinite;
+}
+@keyframes heroJump {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50%      { transform: translate(-50%, -58%); }
+}
+
+/* Score pills — sits as a header above the grid */
+.score-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+.score-pill {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 3px 10px 3px;
+  text-align: center;
+  border: 2px solid #f5b740;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.12);
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.score-pill.opp {
+  background: #e4ebf5;
+  border-color: rgba(0,0,0,0.08);
+}
+.score-value {
+  font-size: clamp(14px, 4.2vw, 20px);
+  color: #2a3a5a;
+  font-weight: 900;
+  line-height: 1.05;
+}
+.score-pill.opp .score-value { color: #6a7a96; }
+.score-label {
+  font-size: clamp(8px, 2vw, 10px);
+  color: #8a96b0;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+}
+.vs {
+  font-size: clamp(13px, 3.6vw, 17px);
+  font-weight: 900;
+  color: #2a3a5a;
+  font-style: italic;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.5);
+  flex-shrink: 0;
+}
+
+/* ---------- Grid wrap + Level badge ---------- */
+/* Play area: score header + grid + bank as one cohesive block, centered by
+   stage's justify-content: space-between. */
+#play-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5%;
+  flex: 0 0 auto;
+}
+
+#grid-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.15), 0 0 0 3px #2a3a5a;
+  overflow: visible;
+  flex: 0 0 auto;
+}
+
+#level-badge {
+  position: absolute;
+  left: 4px; top: -14px;
+  background: linear-gradient(180deg, #8a6ddf 0%, #6a4dbf 100%);
+  color: #fff;
+  font-size: clamp(7px, 1.7vw, 9px);
+  font-weight: 800;
+  padding: 3px 8px 4px;
+  border-radius: 7px;
+  text-align: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  transform: rotate(-3deg);
+  z-index: 3;
+  line-height: 1;
+}
+#level-badge strong { font-size: 1.4em; display: block; margin-top: 1px; }
+
+#grid {
+  position: absolute; inset: 0;
+  display: grid;
+  /* minmax(0, 1fr) forces equal columns regardless of cell content min-width — prevents overflow */
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  gap: 1px;
+  background: #c8d4e8;
+  padding: 1px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Particle canvas overlay covers stage */
+#fx {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  width: 100%; height: 100%;
+  z-index: 20;
+}
+
+/* ---------- Cells ---------- */
+.cell {
+  position: relative;
+  background: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: clamp(14px, 4.2vw, 22px);
+  color: #1f2a44;
+  transition: background-color 120ms ease;
+  /* Critical: must allow shrinking inside the grid track to honor minmax(0, 1fr) */
+  min-width: 0; min-height: 0;
+  overflow: hidden;
+}
+.cell.empty   { background: #ffffff; }
+.cell.block   { background: transparent; }
+.cell.clue-text, .cell.clue-icon {
+  background: #fdf5e0;
+  font-size: clamp(5.5px, 1.45vw, 8.5px);
+  font-weight: 800;
+  color: #6c7588;
+  line-height: 1.05;
+  text-align: center;
+  padding: 2px 1px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.cell.clue-text { flex-direction: column; }
+.cell.clue-icon {
+  padding: 2px;
+  font-size: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.cell.clue-icon .icon-wrap { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.cell.clue-icon svg,
+.cell.clue-icon .icon-img { width: 100%; height: 100%; max-height: 100%; display: block; object-fit: contain; }
+.cell.clue-icon .clue-hint {
+  font-size: clamp(7px, 1.7vw, 10px);
+  font-weight: 800;
+  color: #6c7588;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+  line-height: 1;
+}
+
+/* Multi-line clue: each spec line renders as one row — never wraps further.
+   If a single spec line is too wide for the cell, it gets clipped (intentional —
+   we control breakpoints via config, not via the browser). */
+.cell.clue-text .clue-line {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+}
+.cell.clue-text .clue-line + .clue-line {
+  margin-top: 1px;
+}
+
+/* Multi-clue cell: two clues stacked vertically with a divider line.
+   Each part has its own direction arrow. */
+.cell.clue-text.multi {
+  padding: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.cell.clue-text .clue-part {
+  flex: 1 1 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 2px 5px 2px 1px;
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.cell.clue-text .clue-part + .clue-part {
+  border-top: 1px solid #d9c98a;
+}
+.cell.clue-text .clue-part.clue-right::after {
+  content: "";
+  position: absolute;
+  right: 1px; top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 3px 0 3px 5px;
+  border-color: transparent transparent transparent #b4bccc;
+  pointer-events: none;
+}
+.cell.clue-text .clue-part.clue-down::after {
+  content: "";
+  position: absolute;
+  bottom: 1px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 5px 4px 0 4px;
+  border-color: #b4bccc transparent transparent transparent;
+  pointer-events: none;
+}
+
+/* Direction triangle markers on clue cells (filled corner arrow) */
+.cell.clue-down::after,
+.cell.clue-right::after {
+  content: "";
+  position: absolute;
+  width: 0; height: 0;
+  border-style: solid;
+  pointer-events: none;
+}
+.cell.clue-down::after {
+  bottom: 1px; right: 1px;
+  border-width: 6px 6px 0 0;
+  border-color: #b4bccc transparent transparent transparent;
+}
+.cell.clue-right::after {
+  top: 50%; right: 1px;
+  transform: translateY(-50%);
+  border-width: 4px 0 4px 6px;
+  border-color: transparent transparent transparent #b4bccc;
+}
+
+/* Letter states */
+.cell.placed   { background: #ffffff; color: #1f2a44; animation: cellPop 320ms cubic-bezier(0.25, 1.5, 0.5, 1); }
+.cell.target   { background: #e4e8f5; }
+.cell.target.empty { background: #e4e8f5; }
+/* Solved cell inside a target row — gold gradient + green outer ring (continuous along the row) */
+.cell.target.placed {
+  background: linear-gradient(180deg, #ffd866 0%, #f5b740 55%, #e89c20 100%);
+  color: #2a1a08;
+  box-shadow: inset 0 0 0 1px rgba(154, 90, 42, 0.6), 0 0 0 2px #6ed98a;
+  z-index: 2;
+}
+
+/* Spotlight: while solving, dim every cell that isn't in the active target's ROW.
+   That keeps adjacent hints + clue cells readable so the user can see context,
+   while still dramatically focusing attention on the row to fill. */
+#grid.solving .cell:not(.active-row) {
+  opacity: 0.4;
+  transition: opacity 240ms ease;
+}
+#grid.solving .cell.active-row {
+  opacity: 1;
+  transition: opacity 240ms ease;
+}
+/* Active EMPTY target cells get a soft pulse so the gaps stand out even more. */
+#grid.solving .cell.active-target.empty {
+  background: #cdd9f4;
+  animation: activePulse 1.4s ease-in-out infinite;
+}
+@keyframes activePulse {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(72, 110, 220, 0); }
+  50%      { box-shadow: inset 0 0 0 3px rgba(72, 110, 220, 0.55); }
+}
+.cell.hint     { color: #4ec96a; }
+.cell.wrong    { background: #ffb4b4 !important; animation: cellShake 320ms ease; }
+.cell.cascade-hit { background: #d4f5dc; color: #2a8044; animation: cellCascade 420ms cubic-bezier(0.25, 1.6, 0.5, 1); }
+.cell.row-glow { background: #fff2a8; }
+
+/* +N corner badge floating on target row's last cell */
+.corner-badge {
+  position: absolute;
+  top: -4px; right: -8px;
+  background: #4ec96a;
+  color: #fff;
+  font-size: clamp(10px, 2.6vw, 14px);
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 0 #2a8044;
+  z-index: 4;
+  opacity: 0;
+  transform: scale(0.4) rotate(-12deg);
+  transition: opacity 280ms ease, transform 280ms cubic-bezier(0.25, 1.6, 0.5, 1);
+}
+.corner-badge.show { opacity: 1; transform: scale(1) rotate(0deg); }
+
+@keyframes cellPop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes cellCascade {
+  0%   { transform: scale(0.3) rotate(-8deg); background: #8ee2a0; }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+@keyframes cellShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* ---------- Letter bank ---------- */
+#bank {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  gap: 1.4%;
+  padding: 2% 1% 0;
+  flex: 0 0 auto;
+  z-index: 2;
+  flex-wrap: nowrap;
+  min-height: 0;
+}
+.tile {
+  /* Sized to fit up to 8 tiles in a row inside the capped stage */
+  flex: 0 0 auto;
+  width: clamp(30px, 9.5vw, 46px);
+  aspect-ratio: 1;
+  background: linear-gradient(180deg, #ffe79a 0%, #f5b740 60%, #e89c20 100%);
+  border: 3px solid #9a5a2a;
+  border-radius: 9px;
+  box-shadow:
+    0 4px 0 #9a5a2a,
+    0 6px 10px rgba(0,0,0,0.18),
+    inset 0 -3px 0 rgba(0,0,0,0.12),
+    inset 0 2px 0 rgba(255,255,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(15px, 4.6vw, 24px);
+  font-weight: 900;
+  color: #3a2614;
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+  transition: transform 100ms ease, opacity 160ms ease;
+}
+.tile.gone { transform: scale(0); opacity: 0; pointer-events: none; }
+.tile.bot-hand { transform: translateY(-12px) scale(1.05); }
+.tile.dragging-src { opacity: 0.18; }
+.tile:active { transform: translateY(3px); box-shadow: 0 2px 0 #9a5a2a, 0 4px 6px rgba(0,0,0,0.18); }
+
+/* Bank refresh entrance/exit */
+.tile.enter { transform: translateY(40px) scale(0.6); opacity: 0; transition: transform 320ms cubic-bezier(0.25, 1.6, 0.5, 1), opacity 200ms ease; }
+.tile.exit  { transform: translateY(-40px) scale(0.4); opacity: 0; transition: transform 220ms ease, opacity 200ms ease; }
+
+/* Ghost tile follows pointer / demos */
+.tile.ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+  transform: scale(1.15) translateY(-6px);
+  transition: transform 80ms ease;
+  filter: drop-shadow(0 10px 12px rgba(0,0,0,0.35));
+}
+.tile.ghost.demo { opacity: 0.85; z-index: 28; }
+
+/* Hover highlight on cell while dragging over */
+.cell.letter.hover {
+  background: #fff2a8 !important;
+  box-shadow: inset 0 0 0 4px #6ed98a;
+  transition: none;
+}
+
+/* ---------- Persistent INSTALL NOW button (primary CTA, pinned to bottom) ---------- */
+#install-btn {
+  display: block;
+  width: 86%;
+  margin: 0 auto;
+  /* No margin-top: auto — stage's justify-content: space-between pins it to the bottom */
+  padding: clamp(11px, 3vw, 16px) clamp(12px, 4vw, 18px);
+  font-size: clamp(18px, 5.4vw, 24px);
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, #6ed98a 0%, #4fcc70 55%, #3aa858 100%);
+  border: 3px solid #2a8044;
+  border-radius: 999px;
+  box-shadow: 0 5px 0 #2a8044, 0 8px 14px rgba(0,0,0,0.18);
+  letter-spacing: 2px;
+  cursor: pointer;
+  z-index: 3;
+  animation: installPulse 1.2s ease-in-out infinite;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+  flex: 0 0 auto;
+}
+#install-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #2a8044, 0 4px 6px rgba(0,0,0,0.18);
+}
+@keyframes installPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+
+/* ---------- Tutorial finger ---------- */
+#finger {
+  position: absolute;
+  width: 64px; height: 64px;
+  pointer-events: none;
+  z-index: 30;
+  transition: none;
+  filter: drop-shadow(0 4px 5px rgba(0,0,0,0.35));
+  transform-origin: 30% 10%;
+  animation: fingerTap 0.9s ease-in-out infinite;
+}
+#finger.hidden { display: none; }
+@keyframes fingerTap {
+  0%, 100% { transform: translate(-30%, -10%) scale(1); }
+  50%      { transform: translate(-30%, -10%) scale(0.9); }
+}
+
+/* ---------- Banners ---------- */
+#banner {
+  position: absolute; left: 50%; top: 38%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(20px, 6.5vw, 34px);
+  font-weight: 900;
+  color: #fff;
+  text-shadow:
+    -2.5px -2.5px 0 #c8742a, 2.5px -2.5px 0 #c8742a, -2.5px 2.5px 0 #c8742a, 2.5px 2.5px 0 #c8742a,
+    0 5px 0 rgba(0,0,0,0.35);
+  letter-spacing: 2px;
+  text-align: center;
+  z-index: 40;
+  animation: bannerIn 480ms cubic-bezier(0.2, 1.6, 0.4, 1);
+  white-space: normal;
+  max-width: 88%;
+  line-height: 1.05;
+}
+#banner.hidden { display: none; }
+#banner .sub {
+  display: block; font-size: 0.45em; margin-top: 0.4em; letter-spacing: 4px;
+}
+@keyframes bannerIn {
+  0%   { transform: translate(-50%, -50%) scale(0.3) rotate(-6deg); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.05) rotate(1.5deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+
+/* ---------- +N popups ---------- */
+.pop {
+  position: absolute;
+  pointer-events: none;
+  font-size: clamp(16px, 4.5vw, 28px);
+  font-weight: 900;
+  color: #4ec96a;
+  text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 4px 0 rgba(0,0,0,0.25);
+  z-index: 25;
+  animation: popFloat 900ms ease-out forwards;
+}
+@keyframes popFloat {
+  0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  25%  { transform: translate(-50%, -90%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -160%) scale(1); opacity: 0; }
+}
+
+/* ---------- CTA overlay ---------- */
+#cta {
+  position: absolute; inset: 0;
+  background: rgba(20, 32, 60, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 70;                /* above outro cinematic (60) — CTA always sits on top */
+  animation: ctaFadeIn 280ms ease;
+  cursor: pointer;
+}
+#cta.hidden { display: none; }
+@keyframes ctaFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.cta-card {
+  width: 80%;
+  background: #fff8ea;
+  border-radius: 22px;
+  padding: 8% 6%;
+  text-align: center;
+  border: 4px solid #2a3a5a;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.3);
+  animation: ctaPop 380ms cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+@keyframes ctaPop {
+  0%   { transform: scale(0.5); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.cta-logo { font-size: clamp(22px, 6vw, 34px); font-weight: 900; color: #2a3a5a; }
+.cta-logo span { color: #f5b740; }
+.cta-logo-img { width: 70%; max-height: 80px; object-fit: contain; display: block; margin: 0 auto; }
+.cta-app-icon {
+  width: clamp(72px, 22vw, 110px); height: clamp(72px, 22vw, 110px);
+  border-radius: 22%;
+  display: block; margin: 0 auto 10px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 6px 16px rgba(0,0,0,0.2);
+  object-fit: cover;
+}
+.cta-stars { color: #f5b740; font-size: clamp(16px, 4vw, 22px); margin-top: 6px; font-weight: 800; }
+.cta-stars .rating { color: #444; margin-left: 6px; }
+.cta-social { color: #555; font-size: clamp(11px, 2.6vw, 14px); margin-top: 4px; }
+#cta-btn {
+  display: block; width: 100%;
+  margin-top: 16px;
+  padding: 5% 0;
+  font-size: clamp(18px, 5.5vw, 26px);
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, #6ed98a 0%, #4fcc70 60%, #3aa858 100%);
+  border: 3px solid #2a8044;
+  border-radius: 14px;
+  box-shadow: 0 5px 0 #2a8044;
+  letter-spacing: 2px;
+  cursor: pointer;
+  animation: ctaPulse 1.1s ease-in-out infinite;
+}
+#cta-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2a8044; }
+@keyframes ctaPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+.cta-sub { color: #777; font-size: clamp(10px, 2.4vw, 13px); margin-top: 10px; }
+
+/* Shake whole stage on bot wrong */
+#stage.shake { animation: stageShake 360ms ease; }
+@keyframes stageShake {
+  0%, 100% { transform: translateX(0); }
+  15%      { transform: translateX(-6px) rotate(-0.5deg); }
+  30%      { transform: translateX(6px) rotate(0.5deg); }
+  45%      { transform: translateX(-5px); }
+  60%      { transform: translateX(5px); }
+  80%      { transform: translateX(-3px); }
+}
