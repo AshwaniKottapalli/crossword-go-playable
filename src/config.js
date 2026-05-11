@@ -224,6 +224,37 @@ export const CONFIG = {
 
   ctaUrl: 'https://example.com/install',
 
+  // ---------- Save-the-hero scene (top strip) ----------
+  // Snake creeps toward a hidden character; every correct letter kills the head segment.
+  // 30 segments matches total correct drops: CAM(3) + AWESOME(3) + cascade(24).
+  // Snake visibly dies exactly as the last cascade letter lands.
+  saveScene: {
+    viewBoxW: 360,
+    viewBoxH: 90,
+    heroX: 38,
+    midY: 52,
+    spacing: 7.5,
+    segmentR: 5.2,
+    slitherAmp: 4,
+    // head → tail. Order is kill order. Color groups create a "ribbon" snake that
+    // visibly sheds bands of color as the user solves through each phase.
+    segmentColors: [
+      '#ff3b3b', '#ff3b3b', '#ff3b3b', '#ff5a2e', '#ff5a2e',         // 5 reds  (CAM + first AWESOME)
+      '#ffa502', '#ffa502', '#ffb733', '#ffb733',                     // 4 oranges
+      '#f1c40f', '#f1c40f', '#ffdd55', '#ffdd55', '#ffdd55',          // 5 yellows
+      '#4ec96a', '#4ec96a', '#3aa858', '#3aa858', '#6ed98a',          // 5 greens
+      '#1e90ff', '#1e90ff', '#3aa8ff', '#3aa8ff',                     // 4 blues
+      '#9b59b6', '#9b59b6', '#b06ad0', '#b06ad0',                     // 4 purples
+      '#e84393', '#ff6bb5', '#ff6bb5',                                // 3 pinks (tail tip)
+    ],
+    startX: 320,           // initial snake-group translateX in viewBox units
+    idleSpeedPxPerSec: 4,  // how fast it creeps toward hero (viewBox units / sec)
+    knockbackPx: 10,       // extra retreat on each kill (on top of segment-vanish)
+    minDistanceFromHero: 32, // head can never get closer than this to hero
+    projectileMs: 230,
+    winRetreatMs: 600,     // pause before firing onAllSegmentsKilled
+  },
+
   themes: {
     default: {},
     nobot: { skipFakeFail: true },

@@ -81,6 +81,41 @@ export class Particles {
     });
   }
 
+  // Save-scene: a guided projectile that lerps from start to end, then fires onArrive.
+  laser(startX, startY, endX, endY, color, onArrive, durationMs = 230) {
+    this.parts.push({
+      kind: 'laser',
+      x: startX, y: startY,
+      startX, startY, endX, endY,
+      color,
+      duration: durationMs / 1000,
+      age: 0,
+      life: durationMs / 1000,
+      onArrive,
+      size: 4, vx: 0, vy: 0, gravity: 0, rot: 0, rotSpeed: 0,
+    });
+  }
+
+  // Save-scene: expanding colored ring + sparkle burst at segment-death point.
+  boom(x, y, color) {
+    this.parts.push({
+      kind: 'ring',
+      x, y,
+      startSize: 4, endSize: 34,
+      color,
+      age: 0, life: 0.36,
+      size: 0, vx: 0, vy: 0, gravity: 0, rot: 0, rotSpeed: 0,
+    });
+    this.emit(x, y, 14, {
+      kind: 'sparkle',
+      color,
+      speedMin: 90, speedMax: 280,
+      gravity: 60, upBias: 30,
+      life: 0.55,
+      sizeMin: 2, sizeMax: 6,
+    });
+  }
+
   tick(ts) {
     if (!this._lastTs) this._lastTs = ts;
     const dt = Math.min(0.05, (ts - this._lastTs) / 1000);
@@ -93,7 +128,49 @@ export class Particles {
     for (let i = this.parts.length - 1; i >= 0; i--) {
       const p = this.parts[i];
       p.age += dt;
-      if (p.age >= p.life) { this.parts.splice(i, 1); continue; }
+      if (p.age >= p.life) {
+        if (p.kind === 'laser' && p.onArrive) p.onArrive();
+        this.parts.splice(i, 1);
+        continue;
+      }
+
+      if (p.kind === 'laser') {
+        const k = p.age / p.life;
+        const eased = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        const x = p.startX + (p.endX - p.startX) * eased;
+        const y = p.startY + (p.endY - p.startY) * eased;
+        const trailFrac = Math.max(0, eased - 0.35);
+        const tx = p.startX + (p.endX - p.startX) * trailFrac;
+        const ty = p.startY + (p.endY - p.startY) * trailFrac;
+        this.ctx.strokeStyle = p.color;
+        this.ctx.lineWidth = 3.2;
+        this.ctx.lineCap = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(tx, ty);
+        this.ctx.lineTo(x, y);
+        this.ctx.stroke();
+        this.ctx.fillStyle = p.color;
+        this.ctx.shadowColor = p.color;
+        this.ctx.shadowBlur = 12;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+        continue;
+      }
+
+      if (p.kind === 'ring') {
+        const k = p.age / p.life;
+        const r = p.startSize + (p.endSize - p.startSize) * k;
+        this.ctx.globalAlpha = 1 - k;
+        this.ctx.strokeStyle = p.color;
+        this.ctx.lineWidth = 3 * (1 - k * 0.6);
+        this.ctx.beginPath();
+        this.ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.globalAlpha = 1;
+        continue;
+      }
 
       p.vy += p.gravity * dt;
       p.x += p.vx * dt;

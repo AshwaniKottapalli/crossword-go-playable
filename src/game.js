@@ -6,6 +6,7 @@ import { LetterBank } from './letterBank.js';
 import { UI } from './ui.js';
 import { Audio } from './audio.js';
 import { Particles } from './particles.js';
+import { SaveScene } from './saveScene.js';
 import { runFakeFail } from './fakeFail.js';
 import { runCascade, stageRelCellCenter } from './cascade.js';
 
@@ -33,6 +34,13 @@ export class Game {
       this._armIdleHint();
     };
     this.particles = new Particles(document.getElementById('fx'));
+
+    this.saveScene = new SaveScene({
+      root: document.getElementById('save-scene'),
+      audio: this.audio,
+      particles: this.particles,
+    });
+    this.saveScene.onAllSegmentsKilled = () => this._enterWin();
 
     this.targets = CONFIG.puzzle.targets;
     this.targetIdx = 0;
@@ -64,6 +72,7 @@ export class Game {
   start() {
     // Bank for the first target is loaded first so the fake-fail can grab its decoy.
     this.bank.setLetters(this.targets[0].bank);
+    this.saveScene.start();
     if (CONFIG.skipFakeFail) {
       this._enterSolvePhase();
     } else {
@@ -153,6 +162,7 @@ export class Game {
     this.bank.removeTile(char);
     this.dropsThisPhase++;
     this.ui.addScore(1);
+    this.saveScene.zapSegment(this.grid.cell(r, c).el);
 
     if (this._isTargetComplete(target)) {
       this._onPhaseComplete();
@@ -238,10 +248,12 @@ export class Game {
       ui: this.ui,
       audio: this.audio,
       particles: this.particles,
+      saveScene: this.saveScene,
     }, () => this._enterWin());
   }
 
   _enterWin() {
+    if (this.state === STATE.WIN || this.state === STATE.CTA) return;
     this.state = STATE.WIN;
     this.ui.showBanner(CONFIG.copy.bannerWin, '★ ★ ★', 2200);
     this.audio.play('win');

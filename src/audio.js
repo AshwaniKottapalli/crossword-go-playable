@@ -54,6 +54,9 @@ export class Audio {
       case 'bonus':      return this._bonus();
       case 'win':        return this._win();
       case 'cta':        return this._ctaSwoosh();
+      case 'hiss':       return this._hiss();
+      case 'laser':      return this._laser();
+      case 'boom':       return this._boom();
     }
   }
 
@@ -122,6 +125,65 @@ export class Audio {
       this._tone(659.25, 0.9, 'triangle', 0.22);
       this._tone(783.99, 0.9, 'triangle', 0.22);
     }, 470);
+  }
+
+  _hiss() {
+    // Low-passed white noise — snake hiss at scene reveal
+    const t = this.ctx.currentTime;
+    const dur = 0.55;
+    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * dur, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(1800, t);
+    lp.frequency.exponentialRampToValueAtTime(700, t + dur);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(lp).connect(g).connect(this.master);
+    src.start(t);
+    src.stop(t + dur + 0.05);
+  }
+
+  _laser() {
+    // Descending square chirp — energetic blast
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1400, t);
+    osc.frequency.exponentialRampToValueAtTime(400, t + 0.18);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    osc.connect(g).connect(this.master);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  }
+
+  _boom() {
+    // Short noise burst + low sine thump — segment explosion
+    const t = this.ctx.currentTime;
+    const dur = 0.22;
+    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * dur, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const ng = this.ctx.createGain();
+    ng.gain.setValueAtTime(0.35, t);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(ng).connect(this.master);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+    // Low thump
+    this._tone(80, 0.18, 'sine', 0.32, 0.002, 0.08);
   }
 
   _ctaSwoosh() {

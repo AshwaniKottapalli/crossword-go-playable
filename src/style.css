@@ -23,38 +23,81 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   padding: 4% 4% 3%;
 }
 
-/* ---------- Top: just the brand (icon + app name), compact ---------- */
-#hud-top {
+/* ---------- Top: "Save the Hero" scene ---------- */
+#save-scene {
+  position: relative;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2% 0 0;
+  aspect-ratio: 360 / 90;       /* matches saveScene.viewBox */
+  flex: 0 0 auto;
   z-index: 3;
   min-width: 0;
-  flex: 0 0 auto;
+  overflow: visible;
+  margin-top: 2%;
+  filter: drop-shadow(0 3px 0 rgba(0,0,0,0.18));
+}
+#save-scene .scene-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  overflow: hidden;            /* clip snake tail off-screen + hide hero feet during 'hiding' */
 }
 
-.brand {
-  display: flex; align-items: center;
-  gap: 10px;
+/* Snake body — gentle slither wave on each segment */
+.scene-svg .snake .segment {
+  animation: segmentSlither 1.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transition: opacity 240ms ease, transform 240ms ease;
 }
-.brand-logo {
-  width: clamp(40px, 11vw, 52px);
-  height: clamp(40px, 11vw, 52px);
-  border-radius: 22%;
-  box-shadow: 0 3px 0 rgba(0,0,0,0.18), 0 5px 12px rgba(0,0,0,0.2);
-  object-fit: cover;
-  display: block;
+@keyframes segmentSlither {
+  0%, 100% { transform: translateY(-1.2px); }
+  50%      { transform: translateY(1.2px); }
 }
-.brand-logo[src=""], .brand-logo:not([src]) { display: none; }
-.brand-name {
-  font-size: clamp(26px, 7.5vw, 34px);
-  font-weight: 900;
-  color: #2a3a5a;
-  letter-spacing: 0.5px;
-  text-shadow: 0 2px 0 rgba(255,255,255,0.5);
-  line-height: 1;
+.scene-svg .snake .segment.dead {
+  animation: segmentBoom 300ms ease forwards;
+}
+@keyframes segmentBoom {
+  0%   { opacity: 1; transform: scale(1); }
+  40%  { opacity: 1; transform: scale(1.7); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+
+/* Hero — origin at FEET, all parts extend upward.
+   Mood classes translate the group to different "ground heights" so the bush in
+   front masks more/less of the body. Higher y = more hidden. */
+.scene-svg .hero {
+  transition: transform 360ms cubic-bezier(0.25, 1.6, 0.5, 1);
+}
+.scene-svg .hero .mouth-smile,
+.scene-svg .hero .arm-l,
+.scene-svg .hero .arm-r { opacity: 0; transition: opacity 220ms ease; }
+.scene-svg .hero .mouth-worried,
+.scene-svg .hero .sweat { opacity: 1; transition: opacity 220ms ease; }
+.scene-svg .hero .arm-l,
+.scene-svg .hero .arm-r {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  transition: transform 320ms cubic-bezier(0.25, 1.6, 0.5, 1), opacity 220ms ease;
+}
+
+.scene-svg .hero.hiding   { transform: translate(38px, 104px); }
+.scene-svg .hero.peeking  { transform: translate(38px, 94px);  }
+.scene-svg .hero.half-out { transform: translate(38px, 82px);  }
+.scene-svg .hero.cheering { transform: translate(38px, 78px); animation: heroCheer 680ms ease-out; }
+
+.scene-svg .hero.half-out .mouth-worried,
+.scene-svg .hero.cheering .mouth-worried,
+.scene-svg .hero.half-out .sweat,
+.scene-svg .hero.cheering .sweat { opacity: 0; }
+.scene-svg .hero.half-out .mouth-smile,
+.scene-svg .hero.cheering .mouth-smile { opacity: 1; }
+
+.scene-svg .hero.cheering .arm-l { opacity: 1; transform: rotate(-40deg); }
+.scene-svg .hero.cheering .arm-r { opacity: 1; transform: rotate(40deg);  }
+
+@keyframes heroCheer {
+  0%   { transform: translate(38px, 82px); }
+  45%  { transform: translate(38px, 68px); }
+  100% { transform: translate(38px, 78px); }
 }
 
 /* Score pills — sits as a header above the grid */

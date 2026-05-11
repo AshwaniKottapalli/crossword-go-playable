@@ -4,7 +4,7 @@
 
 import { CONFIG } from './config.js';
 
-export function runCascade({ grid, ui, audio, particles }, onDone) {
+export function runCascade({ grid, ui, audio, particles, saveScene }, onDone) {
   const fills = CONFIG.puzzle.cascadeFills;
   const t = CONFIG.timing;
   const reward = CONFIG.score.cascadeCellReward;
@@ -32,6 +32,9 @@ export function runCascade({ grid, ui, audio, particles }, onDone) {
           ui.pop(cen.x, cen.y - 8, `+${reward}`, { size: '16px', color: '#4ec96a' });
           particles.cascadeBurst(cen.x, cen.y);
         }
+
+        // Save-scene: every cascade letter blasts the next snake segment.
+        saveScene?.zapSegment(cell.el);
 
         // Chime on every Nth fill to keep the rhythm musical, not chaotic.
         if (i % (t.cascadeChimeEvery || 4) === 0) {
