@@ -37,10 +37,13 @@ export class Game {
 
     this.saveScene = new SaveScene({
       root: document.getElementById('save-scene'),
+      intro: document.getElementById('intro-cinematic'),
+      outro: document.getElementById('outro-cinematic'),
+      stage: document.getElementById('stage'),
       audio: this.audio,
       particles: this.particles,
     });
-    this.saveScene.onAllSegmentsKilled = () => this._enterWin();
+    this.saveScene.onAllKilled = () => this._enterWin();
 
     this.targets = CONFIG.puzzle.targets;
     this.targetIdx = 0;
@@ -72,12 +75,14 @@ export class Game {
   start() {
     // Bank for the first target is loaded first so the fake-fail can grab its decoy.
     this.bank.setLetters(this.targets[0].bank);
-    this.saveScene.start();
-    if (CONFIG.skipFakeFail) {
-      this._enterSolvePhase();
-    } else {
-      this._enterFakeFail();
-    }
+    // Play the intro cinematic, then proceed with the bot's fake-fail.
+    this.saveScene.playIntro(() => {
+      if (CONFIG.skipFakeFail) {
+        this._enterSolvePhase();
+      } else {
+        this._enterFakeFail();
+      }
+    });
   }
 
   _enterFakeFail() {
@@ -269,7 +274,7 @@ export class Game {
       this.ui.rollScoreTo(this.ui.score + CONFIG.score.finalBonus, 800);
     }, CONFIG.timing.winBonusDelayMs);
 
-    setTimeout(() => this._enterCTA(), 3200);
+    setTimeout(() => this._enterCTA(), 1600);
   }
 
   _enterCTA() {

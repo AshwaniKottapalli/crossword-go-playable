@@ -18,86 +18,325 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   background: linear-gradient(180deg, #b8c7e8 0%, #9eaedb 65%, #8d9fd0 100%);
   overflow: hidden;
   display: flex; flex-direction: column;
-  justify-content: space-between;  /* hud-top → top, play-area → middle, install-btn → bottom */
+  justify-content: flex-start;     /* stack from top, no extra space between children */
   align-items: center;
-  padding: 4% 4% 3%;
+  gap: 3%;                          /* small gap between scene and play-area */
+  padding: 1% 4% 1%;
 }
 
 /* ---------- Top: "Save the Hero" scene ---------- */
 #save-scene {
   position: relative;
   width: 100%;
-  aspect-ratio: 360 / 90;       /* matches saveScene.viewBox */
+  height: 34%;
   flex: 0 0 auto;
   z-index: 3;
   min-width: 0;
-  overflow: visible;
-  margin-top: 2%;
-  filter: drop-shadow(0 3px 0 rgba(0,0,0,0.18));
+  overflow: hidden;
+  border-radius: 12px;
+  margin-top: 0;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.22), 0 0 0 2px rgba(0,0,0,0.4);
+  background: #0e1224;
 }
-#save-scene .scene-svg {
+
+#save-scene .scene-bg {
   position: absolute; inset: 0;
-  width: 100%; height: 100%;
+  background-image: url('../assets/scene/bg_scene.jpg');
+  background-size: cover;
+  background-position: center 65%;
+  filter: saturate(1.05);
+}
+
+#save-scene::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 80%, rgba(255,200,140,0.18), transparent 60%);
+  pointer-events: none;
+}
+
+/* ---------- Hero (left side of strip) ---------- */
+#save-scene .scene-hero {
+  position: absolute;
+  left: 1%;
+  bottom: -10%;
+  width: 28%;
+  height: 135%;
+  z-index: 3;
+  pointer-events: none;
+}
+#save-scene .hero-sprite {
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom;
+  opacity: 0;
+  transition: opacity 320ms ease;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+}
+#save-scene .hero-sprite.show { opacity: 1; }
+
+/* ---------- Snake ---------- */
+/* Layout: head anchored near hero (left side of strip), body chains rightward,
+   tail extends off-screen. Snake group translates RIGHT on each kill (retreats).
+   Body-1 has a negative translateY so it visually attaches to the head's NECK
+   (upper-right of head sprite, not its center). Each subsequent segment is a bit
+   smaller — gives the snake a sense of receding into the distance. */
+#save-scene .scene-snake {
+  position: absolute;
+  left: 26%;
+  right: -8%;                   /* slight overhang so tail extends partly off-screen */
+  top: 50%;
+  height: 100%;
+  z-index: 4;
+  transform: translate(0%, -50%);
+  transition: transform 320ms cubic-bezier(0.34, 1.4, 0.5, 1);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5));
+}
+#save-scene .scene-snake img,
+#save-scene .scene-snake .snake-head-wrap {
   display: block;
-  overflow: hidden;            /* clip snake tail off-screen + hide hero feet during 'hiding' */
+  flex: 0 0 auto;
+  position: relative;
 }
 
-/* Snake body — gentle slither wave on each segment */
-.scene-svg .snake .segment {
-  animation: segmentSlither 1.4s ease-in-out infinite;
-  transform-box: fill-box;
-  transition: opacity 240ms ease, transform 240ms ease;
+#save-scene .scene-snake .snake-head-wrap {
+  height: 65%;
+  aspect-ratio: 1 / 1;
+  margin-right: -28%;
+  z-index: 6;
+  transform: translateY(-22%);    /* push head UP so the neck/body-attach point sits near strip center */
 }
-@keyframes segmentSlither {
-  0%, 100% { transform: translateY(-1.2px); }
-  50%      { transform: translateY(1.2px); }
+#save-scene .snake-head-wrap img {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
 }
-.scene-svg .snake .segment.dead {
-  animation: segmentBoom 300ms ease forwards;
+#save-scene .head-recoil  { opacity: 0; transition: opacity 80ms ease; }
+#save-scene .head-recoil.hit { opacity: 1; transition: opacity 0ms; }
+#save-scene .head-normal.hit { opacity: 0; }
+
+/* Mid body: 5 small segments forming a visible wave between head and tail.
+   Alternating Y-offsets + flips create the serpent curve. Each kill destroys one. */
+#save-scene .snake-body {
+  aspect-ratio: 5 / 3;
+  height: 22%;
 }
-@keyframes segmentBoom {
-  0%   { opacity: 1; transform: scale(1); }
-  40%  { opacity: 1; transform: scale(1.7); }
-  100% { opacity: 0; transform: scale(2.2); }
+/* Bodies sit at strip center (head's lower-right neck attachment). Alternating
+   translateY creates the slithering wave. */
+#save-scene .snake-body-1 { transform: translateY(10%)  rotate(-2deg);             margin-right: -22%; z-index: 5; }
+#save-scene .snake-body-2 { transform: translateY(30%)  rotate(8deg)  scaleX(-1);   margin-right: -22%; z-index: 4; }
+#save-scene .snake-body-3 { transform: translateY(10%)  rotate(-2deg);             margin-right: -22%; z-index: 3; }
+#save-scene .snake-body-4 { transform: translateY(30%)  rotate(8deg)  scaleX(-1);   margin-right: -22%; z-index: 2; }
+#save-scene .snake-body-5 { transform: translateY(15%)  rotate(-2deg);             margin-right: -18%; z-index: 1; }
+#save-scene .snake-tail   { height: 20%; aspect-ratio: 5 / 3; transform: translateY(25%) rotate(-2deg); z-index: 1; }
+
+/* Body destruction: bright glow flash + fade. Then .dead removes from flex flow
+   so the rest of the body chain slides leftward to fill the gap. */
+#save-scene .snake-body.dying {
+  animation: bodyDie 400ms ease forwards;
+  z-index: 10;
+}
+@keyframes bodyDie {
+  0%   { opacity: 1; filter: brightness(1); }
+  30%  { opacity: 1; filter: brightness(2.5) saturate(2) drop-shadow(0 0 16px #9aff4a); }
+  100% { opacity: 0; filter: brightness(1); }
+}
+#save-scene .snake-body.dead { display: none; }
+
+/* ---------- Vignette ---------- */
+#save-scene .scene-vignette {
+  position: absolute; inset: 0;
+  background-image: url('../assets/scene/fx_vignette.png');
+  background-size: 100% 100%;
+  background-position: center;
+  opacity: var(--vignette-opacity, 0.2);
+  pointer-events: none;
+  z-index: 5;
+  mix-blend-mode: multiply;
+  transition: opacity 200ms ease;
+}
+#save-scene .scene-vignette.flash { animation: vignettePulse 380ms ease-out; }
+@keyframes vignettePulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.95; }
+  100% { opacity: var(--vignette-opacity, 0.2); }
 }
 
-/* Hero — origin at FEET, all parts extend upward.
-   Mood classes translate the group to different "ground heights" so the bush in
-   front masks more/less of the body. Higher y = more hidden. */
-.scene-svg .hero {
-  transition: transform 360ms cubic-bezier(0.25, 1.6, 0.5, 1);
+/* ---------- Splat FX ---------- */
+.splat {
+  position: absolute;
+  width: 110px; height: 110px;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 25;
+  animation: splatPop 480ms ease-out forwards;
+  filter: drop-shadow(0 0 12px rgba(154, 255, 74, 0.6));
 }
-.scene-svg .hero .mouth-smile,
-.scene-svg .hero .arm-l,
-.scene-svg .hero .arm-r { opacity: 0; transition: opacity 220ms ease; }
-.scene-svg .hero .mouth-worried,
-.scene-svg .hero .sweat { opacity: 1; transition: opacity 220ms ease; }
-.scene-svg .hero .arm-l,
-.scene-svg .hero .arm-r {
-  transform-box: fill-box;
-  transform-origin: 50% 0%;
-  transition: transform 320ms cubic-bezier(0.25, 1.6, 0.5, 1), opacity 220ms ease;
+@keyframes splatPop {
+  0%   { transform: translate(-50%, -50%) scale(0.3) rotate(-30deg); opacity: 0; }
+  20%  { transform: translate(-50%, -50%) scale(1.25) rotate(8deg); opacity: 1; }
+  60%  { transform: translate(-50%, -50%) scale(1.1)  rotate(-4deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.3)  rotate(12deg); opacity: 0; }
 }
 
-.scene-svg .hero.hiding   { transform: translate(38px, 104px); }
-.scene-svg .hero.peeking  { transform: translate(38px, 94px);  }
-.scene-svg .hero.half-out { transform: translate(38px, 82px);  }
-.scene-svg .hero.cheering { transform: translate(38px, 78px); animation: heroCheer 680ms ease-out; }
+/* ---------- Mini stage shake on each kill ---------- */
+#stage.mini-shake { animation: miniShake 240ms ease; }
+@keyframes miniShake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-3px) rotate(-0.2deg); }
+  50%      { transform: translateX(3px)  rotate(0.2deg); }
+  75%      { transform: translateX(-2px); }
+}
 
-.scene-svg .hero.half-out .mouth-worried,
-.scene-svg .hero.cheering .mouth-worried,
-.scene-svg .hero.half-out .sweat,
-.scene-svg .hero.cheering .sweat { opacity: 0; }
-.scene-svg .hero.half-out .mouth-smile,
-.scene-svg .hero.cheering .mouth-smile { opacity: 1; }
+/* ---------- Intro / Outro full-bleed cinematics ---------- */
+.cine {
+  position: absolute; inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  background: #0a0d1c;
+}
+.cine.hidden { display: none; }
+.cine .cine-bg {
+  position: absolute; inset: 0;
+  background-image: url('../assets/scene/bg_scene.jpg');
+  background-size: cover;
+  background-position: center;
+}
+.cine .cine-bg-bright {
+  filter: brightness(1.4) saturate(1.2) hue-rotate(20deg);
+}
 
-.scene-svg .hero.cheering .arm-l { opacity: 1; transform: rotate(-40deg); }
-.scene-svg .hero.cheering .arm-r { opacity: 1; transform: rotate(40deg);  }
+/* INTRO: snake LUNGES at terrified hero */
+#intro-cinematic .cine-hero {
+  position: absolute;
+  left: 50%; top: 58%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  z-index: 4;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+  animation: heroTremble 0.18s ease-in-out infinite alternate;
+}
+@keyframes heroTremble {
+  from { transform: translate(calc(-50% - 2px), -50%); }
+  to   { transform: translate(calc(-50% + 2px), -50%); }
+}
+/* Hide extra body parts in intro — the body PNG is S-curved so chaining 4 of them
+   makes spaghetti. Just show head lunging + one trailing body off-screen for "this
+   snake is huge" feel. */
+#intro-cinematic .cine-snake-body2,
+#intro-cinematic .cine-snake-body3,
+#intro-cinematic .cine-snake-body4 { display: none; }
 
-@keyframes heroCheer {
-  0%   { transform: translate(38px, 82px); }
-  45%  { transform: translate(38px, 68px); }
-  100% { transform: translate(38px, 78px); }
+#intro-cinematic .cine-snake-head,
+#intro-cinematic .cine-snake-body1 {
+  position: absolute;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
+}
+#intro-cinematic .cine-snake-head {
+  right: -12%; top: 26%;
+  width: 78%;
+  z-index: 5;
+  transform-origin: 80% 50%;
+  animation: headLunge 2.5s cubic-bezier(0.45, 0, 0.5, 1) forwards;
+}
+#intro-cinematic .cine-snake-body1 {
+  right: -42%; top: 52%;
+  width: 60%;
+  z-index: 4;                       /* behind head */
+  transform: rotate(18deg);
+  animation: bodyTrail 2.5s ease-out forwards;
+}
+@keyframes headLunge {
+  0%   { opacity: 0; transform: translateX(45%) scale(0.85) rotate(0deg); }
+  35%  { opacity: 1; transform: translateX(22%) scale(1.0)  rotate(-2deg); }
+  70%  { opacity: 1; transform: translateX(5%)  scale(1.18) rotate(-5deg); }
+  100% { opacity: 1; transform: translateX(-8%) scale(1.25) rotate(-3deg); }
+}
+@keyframes bodyTrail {
+  0%   { opacity: 0; transform: translateX(35%) rotate(18deg); }
+  60%  { opacity: 0.85; transform: translateX(8%) rotate(18deg); }
+  100% { opacity: 0.85; transform: translateX(0%) rotate(15deg); }
+}
+
+#intro-cinematic .cine-vignette {
+  position: absolute; inset: 0;
+  background-image: url('../assets/scene/fx_vignette.png');
+  background-size: 100% 100%;
+  z-index: 6;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  animation: cineVignettePulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes cineVignettePulse {
+  from { opacity: 0.55; }
+  to   { opacity: 0.95; }
+}
+
+.cine-text {
+  position: absolute;
+  left: 50%; top: 18%;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  font-size: clamp(38px, 11vw, 64px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #ffeb3b;
+  text-shadow:
+    -3px -3px 0 #c0392b, 3px -3px 0 #c0392b, -3px 3px 0 #c0392b, 3px 3px 0 #c0392b,
+    0 6px 0 rgba(0,0,0,0.5);
+  animation: cineTextPunch 480ms cubic-bezier(0.2, 1.6, 0.4, 1) 0.4s both;
+  opacity: 0;
+}
+.cine-text-win {
+  color: #ffdf6b;
+  font-size: clamp(28px, 8.5vw, 50px);
+  top: 14%;
+  text-shadow:
+    -3px -3px 0 #2a8044, 3px -3px 0 #2a8044, -3px 3px 0 #2a8044, 3px 3px 0 #2a8044,
+    0 6px 0 rgba(0,0,0,0.4);
+}
+@keyframes cineTextPunch {
+  0%   { transform: translate(-50%, -50%) scale(0.2) rotate(-12deg); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.15) rotate(3deg);  opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0);        opacity: 1; }
+}
+#intro-cinematic.exit { animation: cineFadeOut 320ms ease forwards; }
+@keyframes cineFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+#stage.intro-shaking { animation: introStageShake 0.22s ease-in-out infinite; }
+@keyframes introStageShake {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-3px, 1px); }
+  50%      { transform: translate(3px, -1px); }
+  75%      { transform: translate(-2px, 2px); }
+}
+
+/* OUTRO */
+#outro-cinematic { opacity: 0; transition: opacity 700ms ease; }
+#outro-cinematic.playing { opacity: 1; }
+#outro-cinematic .cine-hero-safe {
+  position: absolute;
+  left: 50%; top: 56%;
+  transform: translate(-50%, -50%);
+  width: 62%;
+  z-index: 4;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
+  animation: heroJump 1.2s cubic-bezier(0.3, 1.6, 0.4, 1) infinite;
+}
+@keyframes heroJump {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50%      { transform: translate(-50%, -58%); }
 }
 
 /* Score pills — sits as a header above the grid */
@@ -558,7 +797,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   position: absolute; inset: 0;
   background: rgba(20, 32, 60, 0.55);
   display: flex; align-items: center; justify-content: center;
-  z-index: 50;
+  z-index: 70;                /* above outro cinematic (60) — CTA always sits on top */
   animation: ctaFadeIn 280ms ease;
   cursor: pointer;
 }
