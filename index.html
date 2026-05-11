@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Crossword Go</title>
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+
+    <!-- Top: just app icon + app name (compact branding strip) -->
+    <div id="hud-top">
+      <div class="brand">
+        <img class="brand-logo" id="brand-logo" alt="" draggable="false">
+        <div class="brand-name">Crossword Go!</div>
+      </div>
+    </div>
+
+    <!-- Centered play area: score header → crossword grid → letter bank -->
+    <div id="play-area">
+      <div class="score-row">
+        <div class="score-pill you">
+          <div class="score-value" id="score-you">0</div>
+          <div class="score-label">You</div>
+        </div>
+        <div class="vs">Vs</div>
+        <div class="score-pill opp">
+          <div class="score-value" id="score-opp">86</div>
+          <div class="score-label">Opponent</div>
+        </div>
+      </div>
+      <div id="grid-wrap">
+        <div id="level-badge">Level<br><strong>1</strong></div>
+        <div id="grid"></div>
+      </div>
+      <div id="bank"></div>
+    </div>
+
+    <!-- Persistent INSTALL NOW button (always visible — primary CTA) -->
+    <button id="install-btn" aria-label="install">
+      <span>INSTALL NOW</span>
+    </button>
+
+    <!-- Particle canvas overlay -->
+    <canvas id="fx"></canvas>
+
+    <!-- Tutorial finger -->
+    <div id="finger" class="hidden">
+      <svg viewBox="0 0 64 64" width="64" height="64">
+        <path d="M22 18 L22 38 Q22 48 32 48 L40 48 Q48 48 48 40 L48 28 Q48 24 44 24 Q40 24 40 28 L40 22 Q40 18 36 18 Q32 18 32 22 L32 16 Q32 12 28 12 Q24 12 24 16 L24 32"
+              fill="#fff8ea" stroke="#3a2410" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M24 16 Q24 14 26 14 Q28 14 28 16" stroke="#3a2410" stroke-width="1.5" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- Banners -->
+    <div id="banner" class="hidden"></div>
+
+    <!-- CTA overlay (final win-state takeover) -->
+    <div id="cta" class="hidden">
+      <div class="cta-card">
+        <div class="cta-logo">Crossword <span>Go</span></div>
+        <div class="cta-stars">★★★★★ <span class="rating">4.8</span></div>
+        <div class="cta-social">10M+ players</div>
+        <button id="cta-btn">DOWNLOAD FREE</button>
+        <div class="cta-sub">Play 1000+ puzzles</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
