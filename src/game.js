@@ -3,7 +3,7 @@
 import { CONFIG } from './config.js';
 import { Grid } from './grid.js';
 import { LetterBank } from './letterBank.js';
-import { UI } from './ui.js';
+import { UI, pickStoreUrl } from './ui.js';
 import { Audio } from './audio.js';
 import { Particles } from './particles.js';
 import { SaveScene } from './saveScene.js';
@@ -281,7 +281,7 @@ export class Game {
     this.state = STATE.CTA;
     this.audio.play('cta');
     this.ui.showCTA(() => {
-      try { window.open(CONFIG.ctaUrl, '_blank'); } catch (_) {}
+      try { window.open(pickStoreUrl(), '_blank'); } catch (_) {}
     });
   }
 
