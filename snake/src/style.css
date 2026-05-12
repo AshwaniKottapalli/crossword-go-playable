@@ -94,6 +94,20 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   pointer-events: none;
   filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5));
 }
+
+/* When snake has crept to its minimum (closest to hero), trigger a lunging
+   "bite" animation so it never feels static. Each cycle: lunge forward + up,
+   hold briefly, snap back. CSS animation overrides the transition. */
+#save-scene .scene-snake.biting {
+  transition: none;
+  animation: snakeBite 0.75s cubic-bezier(0.4, 0, 0.4, 1) infinite;
+}
+@keyframes snakeBite {
+  0%   { transform: translate(var(--snake-pos), -50%) scale(1); }
+  30%  { transform: translate(calc(var(--snake-pos) - 6%), -53%) scale(1.07); }
+  55%  { transform: translate(calc(var(--snake-pos) - 6%), -53%) scale(1.07); }
+  100% { transform: translate(var(--snake-pos), -50%) scale(1); }
+}
 #save-scene .snake-full {
   display: block;
   width: 100%;
