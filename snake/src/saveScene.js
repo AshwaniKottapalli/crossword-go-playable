@@ -13,13 +13,14 @@
 import { CONFIG } from './config.js';
 
 export class SaveScene {
-  constructor({ root, audio, particles, intro, outro, stage }) {
+  constructor({ root, audio, particles, intro, outro, stage, ui }) {
     this.root = root;
     this.audio = audio;
     this.particles = particles;
     this.intro = intro;
     this.outro = outro;
     this.stage = stage || document.getElementById('stage');
+    this.ui = ui;
     this.cfg = CONFIG.saveScene;
 
     this.heroSprites = {
@@ -42,11 +43,44 @@ export class SaveScene {
     // after the grace period. This gives the player time to read the puzzle
     // before the time-pressure kicks in.
     this._creepActive = false;
+    this._biteCount = 0;
     this.onAllKilled = null;
     this._winFired = false;
 
     this._setMood('scared');
     this._updateSnakeTransform();
+    this._wireBiteEvents();
+  }
+
+  // While the snake is at max threat (.biting class is on), each CSS animation
+  // loop fires both audio + a running bite counter. Every Nth bite costs the
+  // player a point — keeps the bite cycle meaningful, not just visual.
+  _wireBiteEvents() {
+    const onBite = (e) => {
+      if (e.animationName !== 'snakeBite') return;
+      this.audio?.play?.('hiss');
+      this._biteCount++;
+      const N = this.cfg.bitesPerPenalty || 3;
+      if (this._biteCount >= N) {
+        this._biteCount = 0;
+        this._applyBitePenalty();
+      }
+    };
+    this.snakeEl.addEventListener('animationstart', onBite);
+    this.snakeEl.addEventListener('animationiteration', onBite);
+  }
+
+  _applyBitePenalty() {
+    if (!this.ui) return;
+    this.ui.addScore(-1);
+    // Float a -1 popup above the score display so the loss is felt visually.
+    const scoreEl = this.ui.scoreEl;
+    if (!scoreEl) return;
+    const stageRect = this.stage.getBoundingClientRect();
+    const rect = scoreEl.getBoundingClientRect();
+    const x = rect.left + rect.width / 2 - stageRect.left;
+    const y = rect.top + rect.height / 2 - stageRect.top;
+    this.ui.pop(x, y - 18, '-1', { color: '#ff5a5a', size: '22px' });
   }
 
   // Called by game.js after the grace-period timeout. Snake starts creeping.
@@ -119,9 +153,11 @@ export class SaveScene {
     this._flashSnake();
 
     // Knockback: snake retreats rightward by configured amount. Any active
-    // bite animation breaks immediately so the retreat reads cleanly.
+    // bite animation breaks immediately so the retreat reads cleanly, and the
+    // bite counter resets — killing fast lets the player dodge the penalty.
     this.snakePos += this.cfg.retreatPctPerKill;
     this.snakeEl.classList.remove('biting');
+    this._biteCount = 0;
     this._updateSnakeTransform();
 
     this._updateMood();
@@ -184,6 +220,7 @@ export class SaveScene {
         // At max threat: keep tension alive with a lunging bite animation.
         this.snakeEl.classList.add('biting');
       } else {
+        if (this.snakeEl.classList.contains('biting')) this._biteCount = 0;
         this.snakeEl.classList.remove('biting');
       }
       this._updateSnakeTransform();

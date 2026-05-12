@@ -42,6 +42,7 @@ export class Game {
       stage: document.getElementById('stage'),
       audio: this.audio,
       particles: this.particles,
+      ui: this.ui,
     });
     this.saveScene.onAllKilled = () => this._enterWin();
 
