@@ -71,9 +71,10 @@
     </div>
 
     <!-- Intro video overlay — plays once at boot, then the game starts.
-         Drop a file at assets/video/intro.mp4 to enable; if missing, this overlay
-         is removed and the game starts immediately. -->
-    <div id="intro-video" class="hidden">
+         Default state: display:none (via base CSS). JS adds .active to show it
+         only when an actual intro.mp4 is present. Drop a file at
+         assets/video/intro.mp4 to enable; if missing, overlay stays hidden. -->
+    <div id="intro-video">
       <video id="intro-video-el" muted playsinline preload="auto">
         <source src="assets/video/intro.mp4" type="video/mp4">
       </video>
