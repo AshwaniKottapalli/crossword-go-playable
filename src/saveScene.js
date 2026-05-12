@@ -72,6 +72,7 @@ export class SaveScene {
 
   _applyBitePenalty() {
     if (!this.ui) return;
+    this.audio?.play?.('wrong');     // descending buzz so the loss is audibly felt
     this.ui.addScore(-1);
     // Float a -1 popup above the score display so the loss is felt visually.
     const scoreEl = this.ui.scoreEl;
