@@ -237,12 +237,12 @@ export const CONFIG = {
   saveScene: {
     assetsBase: 'assets/scene/',
     totalKills: 30,
-    // Snake position is a single "retreat %" — 0 = head closest to hero (most menacing),
-    // positive = snake has been pushed rightward toward off-screen.
-    initialRetreatPct: 12,     // snake starts pulled back a bit so creep has room to advance
-    retreatPctPerKill: 4.8,    // jerk-back per kill (cascade × 24 quickly drives snake fully off-screen)
-    idleCreepPctPerSec: 0.5,   // very slow advance between kills
-    recoilHoldMs: 220,
+    // Single painted snake; clip-path eats from the right. After bodyKills
+    // kills the snake is clipped to maxClipPct (only head remains visible),
+    // then remaining kills translate the whole group right to retreat.
+    bodyKills: 6,
+    maxClipPct: 72,             // beyond this and the head starts getting cut
+    retreatPctPerKill: 4.5,     // jerk-back per kill once body is gone
     laserMs: 240,
     splatMs: 480,
     introMs: 2500,
