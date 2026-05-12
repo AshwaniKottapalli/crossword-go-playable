@@ -77,17 +77,17 @@ export class Game {
     this.bank.setLetters(this.targets[0].bank);
     // Play the intro cinematic, then proceed with the bot's fake-fail.
     this.saveScene.playIntro(() => {
+      // Snake creep starts immediately so threat is felt from word 1.
+      this.saveScene?.activateCreep();
       if (CONFIG.skipFakeFail) {
         this._enterSolvePhase();
       } else {
         this._enterFakeFail();
       }
-      // Grace period: snake just peeks for N seconds, then starts creeping.
-      // Demo finger (clue) appears at the same time so both pressure + help
-      // arrive together.
+      // Demo finger (clue) stays on a delayed timer so the player gets a
+      // chance to read the puzzle before help is offered.
       const graceMs = CONFIG.saveScene?.gracePeriodMs ?? 10000;
       this._graceTimer = setTimeout(() => {
-        this.saveScene?.activateCreep();
         if (this.state === STATE.SOLVE_EASY || this.state === STATE.SOLVE_AWESOME) {
           this._maybeShowDemo();
         }
