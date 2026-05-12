@@ -38,11 +38,20 @@ export class SaveScene {
     //   200 = fully retreated off-screen
     this.snakePos = this.cfg.startSnakePos;
     this.running = false;
+    // Snake is dormant (just peeking) until activateCreep() is called by game.js
+    // after the grace period. This gives the player time to read the puzzle
+    // before the time-pressure kicks in.
+    this._creepActive = false;
     this.onAllKilled = null;
     this._winFired = false;
 
     this._setMood('scared');
     this._updateSnakeTransform();
+  }
+
+  // Called by game.js after the grace-period timeout. Snake starts creeping.
+  activateCreep() {
+    this._creepActive = true;
   }
 
   // ---------- Lifecycle ----------
@@ -164,7 +173,7 @@ export class SaveScene {
     const dt = Math.min(0.05, (ts - this._lastTs) / 1000);
     this._lastTs = ts;
 
-    if (!this._winFired && this.kills < this.cfg.totalKills) {
+    if (this._creepActive && !this._winFired && this.kills < this.cfg.totalKills) {
       // Idle creep: snake advances leftward (snakePos decreases) at a brisk
       // pace so the user feels time pressure.
       this.snakePos -= this.cfg.idleCreepPctPerSec * dt;
@@ -232,6 +241,7 @@ export class SaveScene {
   reset() {
     this.kills = 0;
     this.snakePos = this.cfg.startSnakePos;
+    this._creepActive = false;
     this._winFired = false;
     this._setMood('scared');
     this._updateSnakeTransform();
