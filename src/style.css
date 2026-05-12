@@ -77,78 +77,36 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
 }
 #save-scene .hero-sprite.show { opacity: 1; }
 
-/* ---------- Snake ---------- */
-/* Layout: head anchored near hero (left side of strip), body chains rightward,
-   tail extends off-screen. Snake group translates RIGHT on each kill (retreats).
-   Body-1 has a negative translateY so it visually attaches to the head's NECK
-   (upper-right of head sprite, not its center). Each subsequent segment is a bit
-   smaller — gives the snake a sense of receding into the distance. */
+/* ---------- Snake ----------
+   Single painted snake illustration. Each correct letter advances clip-path
+   from the right, "snipping off" the tail end. Once the body is fully clipped
+   (only the head remains), subsequent kills translate the whole group right
+   to retreat the head off-screen. */
 #save-scene .scene-snake {
   position: absolute;
-  left: 26%;
-  right: -8%;                   /* slight overhang so tail extends partly off-screen */
+  left: 24%;
+  right: 0;
   top: 50%;
   height: 100%;
   z-index: 4;
   transform: translate(0%, -50%);
   transition: transform 320ms cubic-bezier(0.34, 1.4, 0.5, 1);
   pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
   filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5));
 }
-#save-scene .scene-snake img,
-#save-scene .scene-snake .snake-head-wrap {
+#save-scene .snake-full {
   display: block;
-  flex: 0 0 auto;
-  position: relative;
-}
-
-#save-scene .scene-snake .snake-head-wrap {
-  height: 65%;
-  aspect-ratio: 1 / 1;
-  margin-right: -28%;
-  z-index: 6;
-  transform: translateY(-22%);    /* push head UP so the neck/body-attach point sits near strip center */
-}
-#save-scene .snake-head-wrap img {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  object-position: left center;
+  clip-path: inset(0 var(--snake-clip, 0%) 0 0);
+  transition: clip-path 320ms cubic-bezier(0.34, 1.4, 0.5, 1), filter 200ms ease;
 }
-#save-scene .head-recoil  { opacity: 0; transition: opacity 80ms ease; }
-#save-scene .head-recoil.hit { opacity: 1; transition: opacity 0ms; }
-#save-scene .head-normal.hit { opacity: 0; }
-
-/* Mid body: 5 small segments forming a visible wave between head and tail.
-   Alternating Y-offsets + flips create the serpent curve. Each kill destroys one. */
-#save-scene .snake-body {
-  aspect-ratio: 5 / 3;
-  height: 22%;
+#save-scene .snake-full.hit {
+  filter: brightness(1.7) saturate(1.4) drop-shadow(0 0 18px rgba(154, 255, 74, 0.85));
+  transition: filter 0ms;
 }
-/* Bodies sit at strip center (head's lower-right neck attachment). Alternating
-   translateY creates the slithering wave. */
-#save-scene .snake-body-1 { transform: translateY(10%)  rotate(-2deg);             margin-right: -22%; z-index: 5; }
-#save-scene .snake-body-2 { transform: translateY(30%)  rotate(8deg)  scaleX(-1);   margin-right: -22%; z-index: 4; }
-#save-scene .snake-body-3 { transform: translateY(10%)  rotate(-2deg);             margin-right: -22%; z-index: 3; }
-#save-scene .snake-body-4 { transform: translateY(30%)  rotate(8deg)  scaleX(-1);   margin-right: -22%; z-index: 2; }
-#save-scene .snake-body-5 { transform: translateY(15%)  rotate(-2deg);             margin-right: -18%; z-index: 1; }
-#save-scene .snake-tail   { height: 20%; aspect-ratio: 5 / 3; transform: translateY(25%) rotate(-2deg); z-index: 1; }
-
-/* Body destruction: bright glow flash + fade. Then .dead removes from flex flow
-   so the rest of the body chain slides leftward to fill the gap. */
-#save-scene .snake-body.dying {
-  animation: bodyDie 400ms ease forwards;
-  z-index: 10;
-}
-@keyframes bodyDie {
-  0%   { opacity: 1; filter: brightness(1); }
-  30%  { opacity: 1; filter: brightness(2.5) saturate(2) drop-shadow(0 0 16px #9aff4a); }
-  100% { opacity: 0; filter: brightness(1); }
-}
-#save-scene .snake-body.dead { display: none; }
 
 /* ---------- Vignette ---------- */
 #save-scene .scene-vignette {

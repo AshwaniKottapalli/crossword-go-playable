@@ -3,8 +3,10 @@
 // ACT 1 — INTRO  (0–2.5s, full-bleed overlay): snake lunges at terrified hero,
 //                vignette flashes, camera shakes, "OH NO!" badge punches in.
 // ACT 2 — STRIP  (persistent ~22% top): bg + hero + snake live above the puzzle.
-//                Every correct letter zaps the snake: laser → recoil head sprite
-//                + green splat + red vignette flash + screen shake. Snake retreats.
+//                Single painted snake (head→body→tail in one PNG). Each correct
+//                letter advances a clip-path from the right that "snips off" the
+//                tail end. Once the body is fully clipped (only head remains),
+//                subsequent kills retreat the whole group rightward off-screen.
 // ACT 3 — OUTRO  (on all kills, full-bleed overlay): hero pops up in safe pose,
 //                "YOU SAVED HIM!" badge, then hands off to CTA via onAllKilled().
 
@@ -25,18 +27,16 @@ export class SaveScene {
       brave:  root.querySelector('.hero-brave'),
       safe:   root.querySelector('.hero-safe'),
     };
-    this.snakeEl   = root.querySelector('.scene-snake');
-    this.headNormal = root.querySelector('.head-normal');
-    this.headRecoil = root.querySelector('.head-recoil');
+    this.snakeEl  = root.querySelector('.scene-snake');
+    this.snakeImg = root.querySelector('.snake-full');
     this.vignetteEl = root.querySelector('.scene-vignette');
 
     this.kills = 0;
-    // retreatPct: 0 = head at closest CSS position (most menace), positive = retreated.
-    this.retreatPct = this.cfg.initialRetreatPct;
+    this.clipPct = 0;       // 0 = full snake visible, maxClipPct = only head visible
+    this.retreatPct = 0;    // applied after body is fully clipped
     this.running = false;
     this.onAllKilled = null;
     this._winFired = false;
-    this._recoilTimer = 0;
 
     this._setMood('scared');
     this._updateSnakeTransform();
@@ -44,7 +44,6 @@ export class SaveScene {
 
   // ---------- Lifecycle ----------
 
-  // Called at game boot. Starts the idle creep and (if intro overlay exists) plays the cinematic.
   playIntro(onIntroDone) {
     this._startTickLoop();
     this.audio?.play?.('hiss');
@@ -54,7 +53,6 @@ export class SaveScene {
     }
     this.intro.classList.remove('hidden');
     this.intro.classList.add('playing');
-    // Stage shakes throughout the intro for added menace
     this.stage.classList.add('intro-shaking');
     setTimeout(() => {
       this.intro.classList.add('exit');
@@ -67,51 +65,50 @@ export class SaveScene {
     }, this.cfg.introMs);
   }
 
-  // Called from game._onDrop on every correct letter, and from cascade.js per fill.
-  // cellEl = the cell DOM the letter just landed in (laser source).
-  // Laser targets the front-most live body segment (or head if no body left).
+  // Called per correct letter (user drop + cascade fill).
   zapSegment(cellEl) {
     if (!cellEl || this.kills >= this.cfg.totalKills) return;
     this.kills++;
 
-    const targetBody = this._nextBodyTarget();
-    const targetEl = targetBody || this.headNormal;
-
-    const targetRect = targetEl.getBoundingClientRect();
+    // Laser aims at the CURRENT right edge of the visible snake (where the
+    // next snip will happen). Resolved before any clip advance.
+    const cut = this._currentCutPoint();
     const cellRect = cellEl.getBoundingClientRect();
     const stageRect = this.stage.getBoundingClientRect();
     const startX = (cellRect.left + cellRect.width / 2) - stageRect.left;
     const startY = (cellRect.top + cellRect.height / 2) - stageRect.top;
-    const endX = (targetRect.left + targetRect.width / 2) - stageRect.left;
-    const endY = (targetRect.top + targetRect.height / 2) - stageRect.top;
 
     this.audio?.play?.('laser');
-    this.particles.laser(startX, startY, endX, endY, '#9aff4a', () => {
-      this._onLaserHit(endX, endY, targetBody);
+    this.particles.laser(startX, startY, cut.x, cut.y, '#9aff4a', () => {
+      this._onLaserHit(cut.x, cut.y);
     }, this.cfg.laserMs);
   }
 
-  _nextBodyTarget() {
-    const live = this.snakeEl.querySelectorAll('.snake-body:not(.dying):not(.dead)');
-    return live[0] || null;     // front-most (closest to head)
+  // The right edge of the snake-full image AFTER current clip, in stage coords.
+  _currentCutPoint() {
+    const stageRect = this.stage.getBoundingClientRect();
+    const rect = this.snakeImg.getBoundingClientRect();
+    const visibleWidth = rect.width * (1 - this.clipPct / 100);
+    return {
+      x: rect.left + visibleWidth - 18 - stageRect.left,
+      y: rect.top + rect.height / 2 - stageRect.top,
+    };
   }
 
-  _onLaserHit(hitX, hitY, destroyedBody) {
+  _onLaserHit(hitX, hitY) {
     this.audio?.play?.('boom');
     this.particles.boom(hitX, hitY, '#9aff4a');
     this._showSplat(hitX, hitY);
     this._flashVignette();
     this._shakeStage();
-    this._flashHeadRecoil();
+    this._flashSnake();
 
-    if (destroyedBody) {
-      // Pop the body segment, then remove it from flex flow so the chain compacts.
-      destroyedBody.classList.add('dying');
-      setTimeout(() => destroyedBody.classList.add('dead'), 360);
-      // Small symbolic retreat when body is lost
-      this.retreatPct += 1.0;
+    // First N kills advance the clip-path (eating the body from the tail end).
+    // Kills beyond that translate the whole group right (head retreats).
+    if (this.kills <= this.cfg.bodyKills) {
+      this.clipPct = (this.kills / this.cfg.bodyKills) * this.cfg.maxClipPct;
+      this.retreatPct += 1.2;
     } else {
-      // No body left — head + tail retreat per kill
       this.retreatPct += this.cfg.retreatPctPerKill;
     }
     this._updateSnakeTransform();
@@ -123,18 +120,14 @@ export class SaveScene {
     }
   }
 
-  _flashHeadRecoil() {
-    this.headNormal.classList.add('hit');
-    this.headRecoil.classList.add('hit');
-    clearTimeout(this._recoilTimer);
-    this._recoilTimer = setTimeout(() => {
-      this.headNormal.classList.remove('hit');
-      this.headRecoil.classList.remove('hit');
-    }, this.cfg.recoilHoldMs);
+  _flashSnake() {
+    this.snakeImg.classList.add('hit');
+    clearTimeout(this._flashTimer);
+    this._flashTimer = setTimeout(() => this.snakeImg.classList.remove('hit'), 180);
   }
 
   _playOutro() {
-    this.retreatPct += 40;
+    this.retreatPct += 50;
     this._updateSnakeTransform();
     this._setMood('safe');
 
@@ -145,7 +138,6 @@ export class SaveScene {
     this.outro.classList.remove('hidden');
     requestAnimationFrame(() => this.outro.classList.add('playing'));
 
-    // Hold the YOU SAVED HIM screen, then fade out, then hand off to win flow.
     setTimeout(() => {
       this.outro.classList.remove('playing');
       setTimeout(() => {
@@ -155,7 +147,7 @@ export class SaveScene {
     }, this.cfg.outroEnterMs + this.cfg.outroHoldMs);
   }
 
-  // ---------- Per-frame updates ----------
+  // ---------- Per-frame ----------
 
   _startTickLoop() {
     if (this.running) return;
@@ -167,28 +159,20 @@ export class SaveScene {
 
   _tick(ts) {
     if (!this.running) return;
-    if (!this._lastTs) this._lastTs = ts;
-    const dt = Math.min(0.05, (ts - this._lastTs) / 1000);
-    this._lastTs = ts;
-
+    // Vignette intensity scales with how much of the body remains (closer to
+    // "no body left" = less danger). Snake doesn't creep on idle in this
+    // single-image model; kills drive all motion.
     if (!this._winFired && this.kills < this.cfg.totalKills) {
-      // Idle creep toward hero — retreatPct decreases (snake advances)
-      this.retreatPct -= this.cfg.idleCreepPctPerSec * dt;
-      if (this.retreatPct < 0) this.retreatPct = 0;
-      this._updateSnakeTransform();
-      // Closer = more red. retreatPct above 40 = no danger; at 0 = max.
-      const proximity = Math.max(0, 1 - this.retreatPct / 40);
-      const baseOpacity = 0.12 + proximity * this.cfg.vignetteMaxOpacity * 0.5;
+      const remaining = 1 - (this.clipPct / this.cfg.maxClipPct);
+      const baseOpacity = 0.12 + remaining * this.cfg.vignetteMaxOpacity * 0.5;
       this.vignetteEl.style.setProperty('--vignette-opacity', baseOpacity.toFixed(2));
     }
-
     requestAnimationFrame(this._tick);
   }
 
   _updateSnakeTransform() {
-    // CSS positions the snake group with head's closest-to-hero spot at retreatPct=0.
-    // Positive retreatPct shifts the entire group rightward (away from hero, off-screen).
     this.snakeEl.style.transform = `translate(${this.retreatPct}%, -50%)`;
+    this.snakeImg.style.setProperty('--snake-clip', this.clipPct + '%');
   }
 
   // ---------- Mood ----------
@@ -236,15 +220,12 @@ export class SaveScene {
 
   reset() {
     this.kills = 0;
-    this.retreatPct = this.cfg.initialRetreatPct;
+    this.clipPct = 0;
+    this.retreatPct = 0;
     this._winFired = false;
     this._setMood('scared');
     this._updateSnakeTransform();
     this.outro?.classList.add('hidden');
     this.outro?.classList.remove('playing');
-    // Resurrect all body segments
-    this.snakeEl.querySelectorAll('.snake-body').forEach(el => {
-      el.classList.remove('dying', 'dead');
-    });
   }
 }
