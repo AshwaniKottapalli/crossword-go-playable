@@ -118,8 +118,10 @@ export class SaveScene {
     this._shakeStage();
     this._flashSnake();
 
-    // Knockback: snake retreats rightward by configured amount.
+    // Knockback: snake retreats rightward by configured amount. Any active
+    // bite animation breaks immediately so the retreat reads cleanly.
     this.snakePos += this.cfg.retreatPctPerKill;
+    this.snakeEl.classList.remove('biting');
     this._updateSnakeTransform();
 
     this._updateMood();
@@ -177,7 +179,13 @@ export class SaveScene {
       // Idle creep: snake advances leftward (snakePos decreases) at a brisk
       // pace so the user feels time pressure.
       this.snakePos -= this.cfg.idleCreepPctPerSec * dt;
-      if (this.snakePos < this.cfg.minSnakePos) this.snakePos = this.cfg.minSnakePos;
+      if (this.snakePos <= this.cfg.minSnakePos) {
+        this.snakePos = this.cfg.minSnakePos;
+        // At max threat: keep tension alive with a lunging bite animation.
+        this.snakeEl.classList.add('biting');
+      } else {
+        this.snakeEl.classList.remove('biting');
+      }
       this._updateSnakeTransform();
 
       // Vignette intensity scales with proximity. minSnakePos = max red,
