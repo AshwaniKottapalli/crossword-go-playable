@@ -237,12 +237,14 @@ export const CONFIG = {
   saveScene: {
     assetsBase: 'assets/scene/',
     totalKills: 30,
-    // Single painted snake; clip-path eats from the right. After bodyKills
-    // kills the snake is clipped to maxClipPct (only head remains visible),
-    // then remaining kills translate the whole group right to retreat.
-    bodyKills: 6,
-    maxClipPct: 72,             // beyond this and the head starts getting cut
-    retreatPctPerKill: 4.5,     // jerk-back per kill once body is gone
+    // snakePos: head's horizontal position in % of strip width.
+    //   startSnakePos → only head peeks in from right edge
+    //   minSnakePos   → head close to hero (clamped, can't bite)
+    //   each correct letter retreats it by retreatPctPerKill
+    startSnakePos: 75,          // head fully visible near right edge, body off-screen
+    minSnakePos: 26,            // closest the head can creep to hero
+    idleCreepPctPerSec: 6,      // brisk advance — creates time pressure
+    retreatPctPerKill: 7,       // knockback on each correct letter
     laserMs: 240,
     splatMs: 480,
     introMs: 2500,

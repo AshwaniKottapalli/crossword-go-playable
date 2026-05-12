@@ -78,19 +78,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
 #save-scene .hero-sprite.show { opacity: 1; }
 
 /* ---------- Snake ----------
-   Single painted snake illustration. Each correct letter advances clip-path
-   from the right, "snipping off" the tail end. Once the body is fully clipped
-   (only the head remains), subsequent kills translate the whole group right
-   to retreat the head off-screen. */
+   Single painted snake. translateX positions the head (in % of strip width).
+   Initial: head peeks in from right edge. Idle creep advances it leftward
+   toward the hero (time pressure). Each correct letter retreats it rightward.
+   Eventually it slithers fully off-screen. */
 #save-scene .scene-snake {
   position: absolute;
-  left: 24%;
+  left: 0;
   right: 0;
   top: 50%;
   height: 100%;
   z-index: 4;
-  transform: translate(0%, -50%);
-  transition: transform 320ms cubic-bezier(0.34, 1.4, 0.5, 1);
+  transform: translate(var(--snake-pos, 75%), -50%);
+  transition: transform 280ms cubic-bezier(0.34, 1.4, 0.5, 1);
   pointer-events: none;
   filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5));
 }
@@ -100,8 +100,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   height: 100%;
   object-fit: contain;
   object-position: left center;
-  clip-path: inset(0 var(--snake-clip, 0%) 0 0);
-  transition: clip-path 320ms cubic-bezier(0.34, 1.4, 0.5, 1), filter 200ms ease;
+  transition: filter 200ms ease;
 }
 #save-scene .snake-full.hit {
   filter: brightness(1.7) saturate(1.4) drop-shadow(0 0 18px rgba(154, 255, 74, 0.85));
@@ -186,42 +185,23 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   from { transform: translate(calc(-50% - 2px), -50%); }
   to   { transform: translate(calc(-50% + 2px), -50%); }
 }
-/* Hide extra body parts in intro — the body PNG is S-curved so chaining 4 of them
-   makes spaghetti. Just show head lunging + one trailing body off-screen for "this
-   snake is huge" feel. */
-#intro-cinematic .cine-snake-body2,
-#intro-cinematic .cine-snake-body3,
-#intro-cinematic .cine-snake-body4 { display: none; }
-
-#intro-cinematic .cine-snake-head,
-#intro-cinematic .cine-snake-body1 {
+/* Intro snake — single painted illustration lunges in from the right
+   toward the terrified hero center-screen. */
+#intro-cinematic .cine-snake-full {
   position: absolute;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
-}
-#intro-cinematic .cine-snake-head {
-  right: -12%; top: 26%;
-  width: 78%;
+  right: -15%;
+  top: 22%;
+  width: 130%;
   z-index: 5;
-  transform-origin: 80% 50%;
-  animation: headLunge 2.5s cubic-bezier(0.45, 0, 0.5, 1) forwards;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,0.7));
+  transform-origin: 70% 50%;
+  animation: snakeLungeFull 2.5s cubic-bezier(0.45, 0, 0.5, 1) forwards;
 }
-#intro-cinematic .cine-snake-body1 {
-  right: -42%; top: 52%;
-  width: 60%;
-  z-index: 4;                       /* behind head */
-  transform: rotate(18deg);
-  animation: bodyTrail 2.5s ease-out forwards;
-}
-@keyframes headLunge {
-  0%   { opacity: 0; transform: translateX(45%) scale(0.85) rotate(0deg); }
-  35%  { opacity: 1; transform: translateX(22%) scale(1.0)  rotate(-2deg); }
-  70%  { opacity: 1; transform: translateX(5%)  scale(1.18) rotate(-5deg); }
-  100% { opacity: 1; transform: translateX(-8%) scale(1.25) rotate(-3deg); }
-}
-@keyframes bodyTrail {
-  0%   { opacity: 0; transform: translateX(35%) rotate(18deg); }
-  60%  { opacity: 0.85; transform: translateX(8%) rotate(18deg); }
-  100% { opacity: 0.85; transform: translateX(0%) rotate(15deg); }
+@keyframes snakeLungeFull {
+  0%   { opacity: 0; transform: translateX(35%) scale(0.85) rotate(0deg); }
+  35%  { opacity: 1; transform: translateX(18%) scale(1.0)  rotate(-2deg); }
+  70%  { opacity: 1; transform: translateX(4%)  scale(1.1)  rotate(-4deg); }
+  100% { opacity: 1; transform: translateX(-6%) scale(1.18) rotate(-3deg); }
 }
 
 #intro-cinematic .cine-vignette {
