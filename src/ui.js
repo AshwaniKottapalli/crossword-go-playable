@@ -3,6 +3,15 @@
 import { CONFIG } from './config.js';
 import { uiUrl } from './assets.js';
 
+// Route install clicks to the matching store. iPad masquerades as desktop in
+// modern Safari, so we also probe `maxTouchPoints` to catch it.
+export function pickStoreUrl() {
+  const ua = navigator.userAgent || '';
+  const isIPadOS = navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || isIPadOS;
+  return (isIOS ? CONFIG.stores?.ios : CONFIG.stores?.android) || CONFIG.ctaUrl;
+}
+
 export class UI {
   constructor() {
     this.stage = document.getElementById('stage');
@@ -48,7 +57,7 @@ export class UI {
     if (!btn) return;
     btn.addEventListener('click', () => {
       // Network adapter would go here (Meta FbPlayableAd.onCTAClick / Google clickTag / IronSource MRAID).
-      try { window.open(CONFIG.ctaUrl, '_blank'); } catch (_) {}
+      try { window.open(pickStoreUrl(), '_blank'); } catch (_) {}
     });
   }
 
