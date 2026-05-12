@@ -222,7 +222,12 @@ export const CONFIG = {
     uiBase: 'assets/ui/',
   },
 
-  ctaUrl: 'https://example.com/install',
+  stores: {
+    ios:     'https://apps.apple.com/us/app/crossword-go/id6739069151',
+    android: 'https://play.google.com/store/apps/details?id=in.playsimple.crossword.go&hl=en_IN',
+  },
+  // Legacy fallback (and what ad-network adapters override at packaging time).
+  ctaUrl: 'https://play.google.com/store/apps/details?id=in.playsimple.crossword.go&hl=en_IN',
 
   themes: {
     default: {},
