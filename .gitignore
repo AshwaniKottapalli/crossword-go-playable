@@ -4,3 +4,4 @@ node_modules/
 *.log
 .vscode/
 .idea/
+assets/video/intro_original.mp4

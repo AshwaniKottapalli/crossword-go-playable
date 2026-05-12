@@ -863,3 +863,39 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   60%      { transform: translateX(5px); }
   80%      { transform: translateX(-3px); }
 }
+
+/* ---------- Initial loading screen ----------
+   Visible by default; JS adds .done to fade out once scene assets are ready. */
+#loading-screen {
+  position: absolute; inset: 0;
+  z-index: 200;
+  background: linear-gradient(180deg, #0e1224 0%, #1c2440 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  transition: opacity 320ms ease;
+}
+#loading-screen.done {
+  opacity: 0;
+  pointer-events: none;
+}
+.loader-spinner {
+  width: 56px;
+  height: 56px;
+  border: 5px solid rgba(255,255,255,0.22);
+  border-top-color: #f5b740;
+  border-radius: 50%;
+  animation: loaderSpin 0.9s linear infinite;
+}
+@keyframes loaderSpin {
+  to { transform: rotate(360deg); }
+}
+.loader-label {
+  color: #fff;
+  font-weight: 900;
+  font-size: clamp(14px, 4vw, 18px);
+  letter-spacing: 4px;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+}

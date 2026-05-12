@@ -7,11 +7,16 @@ import { Game } from './game.js';
 Object.assign(CONFIG, getActiveConfig());
 
 const INTRO_VIDEO_PATH = 'assets/video/intro.mp4';
+const LOADER_MIN_MS = 200;
+const _loaderStart = performance.now();
 
 (async () => {
   // HEAD-check every expected asset before constructing the game so that
   // icons.js / ui.js can synchronously choose PNG vs. inline SVG/CSS.
   await detectMany(expectedAssetPaths());
+
+  // Drop the loading screen now that critical assets are accounted for.
+  await hideLoader();
 
   // Play the intro video first if one was dropped at assets/video/intro.mp4.
   // If missing or autoplay blocked and untapped, falls back cleanly to the game.
@@ -26,6 +31,17 @@ const INTRO_VIDEO_PATH = 'assets/video/intro.mp4';
     if (e.key === 'r') location.reload();
   });
 })();
+
+async function hideLoader() {
+  const loader = document.getElementById('loading-screen');
+  if (!loader) return;
+  const elapsed = performance.now() - _loaderStart;
+  if (elapsed < LOADER_MIN_MS) {
+    await new Promise(r => setTimeout(r, LOADER_MIN_MS - elapsed));
+  }
+  loader.classList.add('done');
+  setTimeout(() => loader.remove(), 360);
+}
 
 async function playIntroVideo() {
   const overlay = document.getElementById('intro-video');
