@@ -5,11 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Crossword Go</title>
+<script>
+  // Variant router: ?variant=snake → snake folder. Runs BEFORE styles/scripts load.
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.get('variant') === 'snake') {
+      var base = location.pathname.replace(/[^\/]*$/, '');
+      location.replace(base + 'snake/' + location.hash);
+    }
+  })();
+</script>
 <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
 <div id="app">
   <div id="stage">
+
+    <!-- Initial loading screen — shown until assets are ready, then faded out. -->
+    <div id="loading-screen">
+      <div class="loader-spinner"></div>
+      <div class="loader-label">LOADING</div>
+    </div>
 
     <!-- Top: just app icon + app name (compact branding strip) -->
     <div id="hud-top">
