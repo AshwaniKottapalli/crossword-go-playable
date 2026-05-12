@@ -171,12 +171,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   filter: brightness(1.4) saturate(1.2) hue-rotate(20deg);
 }
 
-/* INTRO: snake LUNGES at terrified hero */
+/* INTRO: kid on the left, snake head peeks in from the right edge */
 #intro-cinematic .cine-hero {
   position: absolute;
-  left: 50%; top: 58%;
+  left: 30%; top: 58%;
   transform: translate(-50%, -50%);
-  width: 50%;
+  width: 44%;
   z-index: 4;
   filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
   animation: heroTremble 0.18s ease-in-out infinite alternate;
@@ -185,23 +185,22 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   from { transform: translate(calc(-50% - 2px), -50%); }
   to   { transform: translate(calc(-50% + 2px), -50%); }
 }
-/* Intro snake — single painted illustration lunges in from the right
-   toward the terrified hero center-screen. */
-#intro-cinematic .cine-snake-full {
+/* Intro snake — just the head peeks in from the right edge, signaling danger
+   without dominating the frame. The kid stays the focal point on the left. */
+#intro-cinematic .cine-snake-head {
   position: absolute;
-  right: -15%;
-  top: 22%;
-  width: 130%;
+  right: -12%;
+  top: 44%;
+  width: 50%;
   z-index: 5;
   filter: drop-shadow(0 8px 14px rgba(0,0,0,0.7));
-  transform-origin: 70% 50%;
-  animation: snakeLungeFull 2.5s cubic-bezier(0.45, 0, 0.5, 1) forwards;
+  transform-origin: 80% 50%;
+  animation: snakeHeadPeek 2.5s cubic-bezier(0.45, 0, 0.5, 1) forwards;
 }
-@keyframes snakeLungeFull {
-  0%   { opacity: 0; transform: translateX(35%) scale(0.85) rotate(0deg); }
-  35%  { opacity: 1; transform: translateX(18%) scale(1.0)  rotate(-2deg); }
-  70%  { opacity: 1; transform: translateX(4%)  scale(1.1)  rotate(-4deg); }
-  100% { opacity: 1; transform: translateX(-6%) scale(1.18) rotate(-3deg); }
+@keyframes snakeHeadPeek {
+  0%   { opacity: 0; transform: translate(45%, -50%) scale(0.9); }
+  55%  { opacity: 1; transform: translate(8%,  -50%) scale(1.0); }
+  100% { opacity: 1; transform: translate(0%,  -50%) scale(1.05); }
 }
 
 #intro-cinematic .cine-vignette {

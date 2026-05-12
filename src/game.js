@@ -82,6 +82,16 @@ export class Game {
       } else {
         this._enterFakeFail();
       }
+      // Grace period: snake just peeks for N seconds, then starts creeping.
+      // Demo finger (clue) appears at the same time so both pressure + help
+      // arrive together.
+      const graceMs = CONFIG.saveScene?.gracePeriodMs ?? 10000;
+      this._graceTimer = setTimeout(() => {
+        this.saveScene?.activateCreep();
+        if (this.state === STATE.SOLVE_EASY || this.state === STATE.SOLVE_AWESOME) {
+          this._maybeShowDemo();
+        }
+      }, graceMs);
     });
   }
 
@@ -107,7 +117,8 @@ export class Game {
     this.dropsThisPhase = 0;
     this.bank.setLocked(false);
     this.grid.highlightTarget(target.cells);
-    if (!this._userInteracted) this._maybeShowDemo();
+    // Demo finger no longer fires immediately — the grace-period timer (or
+    // re-armed idle hint after user activity) controls when the clue appears.
     this._armIdleHint();
   }
 

@@ -244,7 +244,8 @@ export const CONFIG = {
     startSnakePos: 75,          // head fully visible near right edge, body off-screen
     minSnakePos: 26,            // closest the head can creep to hero
     idleCreepPctPerSec: 6,      // brisk advance — creates time pressure
-    retreatPctPerKill: 7,       // knockback on each correct letter
+    retreatPctPerKill: 16,      // bigger knockback per kill so tension oscillates
+    gracePeriodMs: 10000,       // delay before snake starts creeping (and clue appears)
     laserMs: 240,
     splatMs: 480,
     introMs: 2500,
