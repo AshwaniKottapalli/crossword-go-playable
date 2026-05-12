@@ -422,8 +422,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
 #install-btn {
   display: block;
   width: 86%;
-  margin: 0 auto;
-  /* No margin-top: auto — stage's justify-content: space-between pins it to the bottom */
+  margin: clamp(8px, 2.5vw, 16px) auto 0;   /* explicit gap above so it can't touch the bank */
   padding: clamp(11px, 3vw, 16px) clamp(12px, 4vw, 18px);
   font-size: clamp(18px, 5.4vw, 24px);
   font-weight: 900;
@@ -582,16 +581,20 @@ html, body { width: 100%; height: 100%; overflow: hidden; touch-action: manipula
   80%      { transform: translateX(-3px); }
 }
 
-/* ---------- Intro video overlay ---------- */
-#intro-video {
+/* ---------- Intro video overlay ----------
+   Hidden by default (display: none). JS adds .active to reveal — this way the
+   skip button can never leak through before JS runs or if the video file is
+   missing. */
+#intro-video { display: none; }
+#intro-video.active {
+  display: flex;
   position: absolute; inset: 0;
   z-index: 100;
   background: #000;
-  display: flex; align-items: center; justify-content: center;
+  align-items: center; justify-content: center;
   overflow: hidden;
   cursor: pointer;
 }
-#intro-video.hidden { display: none; }
 #intro-video-el {
   width: 100%; height: 100%;
   object-fit: cover;

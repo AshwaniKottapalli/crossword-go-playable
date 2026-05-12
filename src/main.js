@@ -42,12 +42,12 @@ async function playIntroVideo() {
     return;
   }
 
-  overlay.classList.remove('hidden');
+  overlay.classList.add('active');
 
   return new Promise((resolve) => {
     const finish = () => {
       videoEl.pause();
-      overlay.classList.add('hidden');
+      overlay.classList.remove('active');
       resolve();
     };
     videoEl.addEventListener('ended', finish, { once: true });
