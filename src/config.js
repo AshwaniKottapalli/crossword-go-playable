@@ -246,6 +246,7 @@ export const CONFIG = {
     idleCreepPctPerSec: 6,      // brisk advance — creates time pressure
     retreatPctPerKill: 16,      // bigger knockback per kill so tension oscillates
     gracePeriodMs: 10000,       // delay before snake starts creeping (and clue appears)
+    bitesPerPenalty: 3,         // every Nth bite while at min position costs the player 1 point
     laserMs: 240,
     splatMs: 480,
     introMs: 2500,
