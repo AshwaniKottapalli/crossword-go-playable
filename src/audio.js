@@ -22,8 +22,21 @@ export class Audio {
 
     const unlock = () => {
       if (this.ctx.state !== 'running') this.ctx.resume();
+      // iOS Safari needs a silent buffer fired inside the user gesture to
+      // FULLY unlock — resume() alone leaves it in a state where ctx says
+      // "running" but no audio actually outputs. Costs one tiny buffer.
+      if (!this._iosUnlocked) {
+        try {
+          const buf = this.ctx.createBuffer(1, 1, 22050);
+          const src = this.ctx.createBufferSource();
+          src.buffer = buf;
+          src.connect(this.ctx.destination);
+          src.start(0);
+          this._iosUnlocked = true;
+        } catch (_) {}
+      }
     };
-    ['pointerdown', 'touchstart', 'keydown'].forEach(ev =>
+    ['pointerdown', 'touchstart', 'keydown', 'click'].forEach(ev =>
       window.addEventListener(ev, unlock, { once: false, passive: true }));
 
     this.ctx.addEventListener('statechange', () => {
@@ -36,12 +49,12 @@ export class Audio {
 
   play(name, opts = {}) {
     if (!this.ctx) this.init();
-    const fire = () => this._dispatch(name, opts);
-    if (this.ctx.state !== 'running') {
-      this.queue.push(fire);
-      return;
-    }
-    fire();
+    // Drop calls when audio context isn't running yet. Queueing leads to a
+    // cacophony on unlock (esp. the bite-cycle hiss firing many times before
+    // the user touches anything). Better to silently miss a sound than to
+    // flood the moment the user finally interacts.
+    if (this.ctx.state !== 'running') return;
+    this._dispatch(name, opts);
   }
 
   _dispatch(name, opts) {
