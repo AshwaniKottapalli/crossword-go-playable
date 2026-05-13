@@ -21,11 +21,14 @@ export const STATE = {
 };
 
 export class Game {
-  constructor() {
+  constructor({ audio } = {}) {
     this.state = STATE.INIT;
     this.ui = new UI();
-    this.audio = new Audio();
-    this.audio.init();
+    // Prefer the pre-warmed audio passed in by main.js (its unlock listeners
+    // were registered at module load so early iOS taps aren't lost). Fall back
+    // to constructing a fresh one for any caller that doesn't pass one.
+    this.audio = audio || new Audio();
+    if (!audio) this.audio.init();
     this.grid = new Grid(CONFIG);
     this.bank = new LetterBank(CONFIG, (char, r, c) => this._onDrop(char, r, c));
     this.bank.onDragStart = () => {
